@@ -1,0 +1,157 @@
+[
+  {
+    "mutation": "> → >=",
+    "snippet": "if (key.some((c) => c > 0x7f)) return null;",
+    "reason": "redundant with rawCheck: a key byte of 0x7f fails keyOk (schema) and >0x7f vs >=0x7f both reject it before signing."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "if (v.some((c) => c > 0x7f)) return null;",
+    "reason": "redundant with rawCheck: a value byte of 0x7f fails isPrintable (0x7e is the max), so >0x7f and >=0x7f reject identically."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "if (body.length > MAX_PAYLOAD) return null;",
+    "reason": "the largest grammar-valid body is 235 bytes (key<=32,value<=200); body.length can never be 256, so >MAX_PAYLOAD and >=MAX_PAYLOAD never differ, and a value>200 is already rejected by rawCheck."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "if (dev >= DEVIATION.BLOCK) return { allow: false, level: 'BLOCK', reason: 'deviation ' + ",
+    "reason": "deviation is floor(count*1000/HALF) L1-summed; around BLOCK=800 the reachable values step 750 then 813 (never 800 exactly), so >=800 and >800 decide identically on every reachable op-mix."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "if (op === OPS.DEL && (dels > DEL_CAP || dev >= DEVIATION.STEP_UP)) {",
+    "reason": "same floor'd-permille argument at STEP_UP=600: the reachable deviation steps 563 then 625, never 600, so >= and > are identical."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "const level = dev >= DEVIATION.THROTTLE ? 'THROTTLE' : 'ALLOW';",
+    "reason": "same floor'd-permille argument at THROTTLE=400: the reachable deviation steps 375 then 437, never 400, so >= and > are identical."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "return { allow: false, level: 'STEP-UP', reason: dels > DEL_CAP ? 'too many deletes — ' + ",
+    "reason": "this only selects the STEP-UP reason TEXT; dels>DEL_CAP vs >= differ only when dels===DEL_CAP AND a deviation-triggered STEP-UP coincides, which the floor'd-permille thresholds make unreachable. No admit/refuse effect."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const r = refusal && typeof refusal === 'object' ? refusal : {};",
+    "reason": "input normalizer: for a truthy non-object refusal, r=junk vs r={} both give r.stage===undefined → the same default family; for junk/valid it is unchanged."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const f = facts && typeof facts === 'object' ? facts : {};",
+    "reason": "input normalizer: facts=junk vs {} both give f.bytes===undefined → an empty byte view → the same classification."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const f = facts && typeof facts === 'object' ? facts : {};",
+    "reason": "input normalizer in fingerprint: facts=junk vs {} both yield an empty byte view → the same fingerprint."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const n = typeof source === 'string' && Object.prototype.hasOwnProperty.call(m.sources, so",
+    "reason": "standing: a non-string source yields n=0 either way (|| would test hasOwnProperty on a non-string key, which is absent), so the ladder verdict is unchanged."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "const declared = len >= 16 ? (b[14] << 8) | b[15] : -1;",
+    "reason": "at len===16 (the only length where >=16 and >16 differ) actual=-64, so declared-actual clamps to 64 and feature[5]=128 whichever branch is taken; identical for every input."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const r = refusal && typeof refusal === 'object' ? refusal : {};",
+    "reason": "immuneStage input normalizer: junk refusal → r.stage undefined → 'error' whether r is {} or the junk itself."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "const f = facts && typeof facts === 'object' ? facts : {};",
+    "reason": "mint facts normalizer: junk facts → f.stage undefined → stage 'error' whether f is {} or the junk itself."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "if (!a || typeof a !== 'object' || size >= MAX_LIBRARY) continue;",
+    "reason": "library cap off-by-one at MAX_LIBRARY=8192: reaching it needs 8192 distinct antibodies (never approached in any run), and one more or fewer changes nothing observable."
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (!a || typeof a !== 'object' || size >= MAX_LIBRARY) continue;",
+    "reason": "same MAX_LIBRARY cap line: the size>=cap short-circuit is a memory bound; flipping the || changes only whether the cap check is reached for malformed input, which is rejected by the kind/shape guards regardless."
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (!Array.isArray(a) || !Array.isArray(b) || a.length !== WEIGHTS.length || b.length !== ",
+    "reason": "distance array-guard: a length/array mismatch still yields a non-finite distance via the per-element integer guard, so recognise/adopt (which only test d<=RADIUS) behave identically."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "if (leadingZeroBits(sha256hex(challengeStr + '|' + nonce)) >= b) return nonce;",
+    "reason": "solve returns a token clearing >b instead of >=b — still a valid token (>b implies >=b); verifyWork accepts it and the asked difficulty is still met, so no observable change."
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "if (b <= 0) return '0';",
+    "reason": "solve(_,0): b<=0 returns '0'; with b<0 it enters the loop and the first nonce '0' clears 0 bits immediately, returning '0' — identical."
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "for (let n = 0; n <= maxRefusals; n++) { const d = difficultyFor(n); if (d < prev) return ",
+    "reason": "ratchetHolds self-check loop bound: dropping the final n leaves the monotonic verdict unchanged (difficultyFor is monotone throughout)."
+  },
+  {
+    "mutation": "return false → return true",
+    "snippet": "for (let n = 0; n <= maxRefusals; n++) { const d = difficultyFor(n); if (d < prev) return ",
+    "reason": "ratchetHolds: the 'd<prev return false' branch is unreachable because difficultyFor is monotone, so its return value cannot be observed."
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "for (let n = 0; n <= maxRefusals; n++) {",
+    "reason": "elasticHolds self-check loop bound: dropping the final n leaves the monotone/elastic verdict unchanged."
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "if (released(REBOUND_LADDER.BLOCK) <= released(REBOUND_LADDER.BLOCK - 1)) broke.push('cros",
+    "reason": "elasticHolds crossing check: released(BLOCK)=4096 vs released(BLOCK-1)=1, so 4096<=1 and 4096<1 are both false — no push either way."
+  },
+  {
+    "mutation": "< → <=",
+    "snippet": "for (let i = 0; i < hexDigest.length; i++) {",
+    "reason": "leadingZeroBits loop bound: it returns at the first non-zero nibble; the bound is only reached for an all-zero 64-hex digest, which sha256 never produces, so <len and <=len are identical in practice."
+  },
+  {
+    "mutation": "< → <=",
+    "snippet": "for (let i = 0; i < cap; i++) {",
+    "reason": "solve loop bound: solve returns on the first qualifying nonce or at the cap; one extra iteration at the cap edge is never observed (the cap is a backstop)."
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (typeof nonce !== 'string' || !NONCE.test(nonce) || typeof challengeStr !== 'string') r",
+    "reason": "verifyWork input guard: a non-string / non-hex nonce that slips past the flipped guard still fails the hash check (the digest of 'challenge|<junk>' does not clear the bits), so the verdict is unchanged."
+  },
+  {
+    "mutation": "+ 1 → - 1",
+    "snippet": "export function ratchetHolds(maxRefusals = REBOUND_LADDER.ISOLATE + 10) {",
+    "reason": "default arg ISOLATE+10 vs ISOLATE-10: both cover every ladder rung (<ISOLATE..>=ISOLATE), so ratchetHolds's monotone check returns the same verdict."
+  },
+  {
+    "mutation": "+ 1 → - 1",
+    "snippet": "export function elasticHolds(maxRefusals = REBOUND_LADDER.ISOLATE + 10) {",
+    "reason": "default arg ISOLATE+10 vs ISOLATE-10: both cover every rung, so elasticHolds returns the same verdict."
+  },
+  {
+    "mutation": "&& → ||",
+    "snippet": "if (m && typeof m.key === 'string') return printable(m.key).slice(0, 80);",
+    "reason": "inscription: parse() always yields a string key when m is truthy, so m&&typeof vs m||typeof select the same branch; the differing case (m truthy, key non-string) is unreachable."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "if (/^0+$/.test(counter) || n < 3 || n > 256 || body.length !== n * 2) return false;",
+    "reason": "n>256 is unreachable: the largest grammar-valid payload is n=235 (op+key<=32+value<=200), so >256 and >=256 never differ on a real packet."
+  },
+  {
+    "mutation": "|| → &&",
+    "snippet": "if (/^0+$/.test(counter) || n < 3 || n > 256 || body.length !== n * 2) return false;",
+    "reason": "masked disjunction: of n<3 / n>256, a sub-3 payload is also rejected by the op-parse (too short to form a valid op) and n>256 is unreachable, so flipping this || leaves grammarOk's verdict unchanged."
+  }
+]

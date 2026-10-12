@@ -1,0 +1,20 @@
+# BREAK IT
+
+> A white-box verify-before-parse gate with a living immune system and a thermodynamic cost law ("the rebound"). A naive app sits behind the gate; reach it with anything malicious and a referee — written independently of the gate — declares the break and mints a signed, re-runnable trophy. The live page runs the exact kernel the tests and CI gate.
+
+Live arena: https://sjgant80-hub.github.io/break-it/
+
+## What it is
+- Verify-before-parse: raw-byte checks (size, magic, schema) and an Ed25519 signature and an exact per-sender counter all pass before any untrusted byte is decoded. One canonical wire encoding, so a packet cannot be read two ways.
+- Living immune system: every refusal becomes memory (family + fingerprint); refusals that can never become valid become exact antibodies recognised on sight; new attacks are recognised by shape. Negative selection re-runs every antigen through the node's own gate before minting, so there is no false immunity. On a mesh, a zero-day lands once, then the herd is immune.
+- The rebound law: a distrusted source must spend proof-of-work that rises with its own refusals, while the defender verifies a token in one hash and emits nothing back onto the network. Stated and measured as conservation/ratchet invariants.
+- Sentinel: a behaviour guard on verified traffic (drain, destruction, one-class deviation) on Gary W. Floyd's GEP ladder.
+- Append-only hash-chained ledger, fsync'd before the app acts; re-verified against the gate on every start.
+
+## Proof
+- attack-kit/redteam.mjs --check: regenerates receipts/redteam.json byte-for-byte (66 vectors, all held). CI runs it.
+- witness-all.mjs: mutation + fuzz gate over every decision kernel. CI runs it.
+- test/: unit + hostile-input (never-throw) suites.
+
+## Credits
+GEP ladder: Gary W. Floyd, Lumiea Systems Research Division, ThunderStruck Service LLC, "GEP-Based Security" (2025). Codec lineage: Thomas Frumkin / Konomi. MIT licensed.

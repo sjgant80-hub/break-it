@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://sjgant80-hub.github.io/break-it/sitemap.xml

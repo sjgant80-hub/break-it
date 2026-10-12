@@ -1,0 +1,16 @@
+{
+  "name": "break-it",
+  "version": "1.0.0",
+  "description": "A verify-before-parse gate with a living immune system and a cost law. White-box. Break it however you can.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "start": "node run.mjs",
+    "mesh": "node run.mjs --mesh 3",
+    "test": "node --test test/*.test.mjs",
+    "witness": "node witness-all.mjs",
+    "redteam": "node attack-kit/redteam.mjs",
+    "redteam:check": "node attack-kit/redteam.mjs --check"
+  },
+  "engines": { "node": ">=20" }
+}

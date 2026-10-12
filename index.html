@@ -1,0 +1,365 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>BREAK IT</title>
+<meta name="description" content="A white-box verify-before-parse gate with a living immune system and a cost law. Reach the app behind it with anything malicious and you win. The page runs the exact kernel its tests and CI gate." />
+<style>
+  :root{
+    --bg:#0a0d12; --panel:#121820; --panel2:#0e141b; --ink:#e7edf3; --dim:#8da2b5; --faint:#5a6b7d;
+    --line:#1e2a36; --accent:#45d0a8; --accent2:#6ab0ff; --bad:#ff6b6b; --warn:#ffcf5c; --gold:#ffd24a;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+    --sans:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+  }
+  :root:not([data-theme="dark"]) @media (prefers-color-scheme: light){}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--sans);line-height:1.5;
+    -webkit-font-smoothing:antialiased;padding:0 16px;max-width:980px;margin:0 auto}
+  a{color:var(--accent2)}
+  h1{font-size:clamp(28px,7vw,44px);letter-spacing:.06em;margin:.6em 0 .1em;font-weight:800}
+  h1 .x{color:var(--accent)}
+  .tag{color:var(--dim);font-size:15px;margin:0 0 1.1em;max-width:62ch}
+  .rule{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:10px;padding:14px 16px;margin:0 0 20px;font-size:14.5px;color:var(--ink)}
+  .rule b{color:var(--accent)}
+  .grid{display:grid;grid-template-columns:1fr;gap:16px}
+  @media(min-width:760px){.grid.two{grid-template-columns:1fr 1fr}}
+  .panel{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px}
+  .panel h2{font-size:12px;text-transform:uppercase;letter-spacing:.14em;color:var(--dim);margin:0 0 12px;font-weight:700}
+  label{display:block;font-size:12px;color:var(--dim);margin:10px 0 4px;text-transform:uppercase;letter-spacing:.08em}
+  textarea,input,select{width:100%;background:var(--panel2);color:var(--ink);border:1px solid var(--line);
+    border-radius:8px;padding:9px 10px;font-family:var(--mono);font-size:12.5px;resize:vertical}
+  textarea{min-height:64px;word-break:break-all}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin:12px 0}
+  button{background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:8px;
+    padding:9px 13px;font-size:13px;cursor:pointer;font-family:var(--sans);transition:.12s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);color:#05231c;border-color:var(--accent);font-weight:700}
+  button.primary:hover{filter:brightness(1.08);color:#05231c}
+  button.danger:hover{border-color:var(--bad);color:var(--bad)}
+  .mono{font-family:var(--mono);font-size:12px;word-break:break-all;color:var(--dim)}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .kv:last-child{border-bottom:0}
+  .kv span:first-child{color:var(--dim)}
+  .kv span:last-child{font-family:var(--mono);text-align:right}
+  .ladder{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+  .stage{font-family:var(--mono);font-size:11px;padding:4px 8px;border-radius:6px;background:var(--panel2);
+    border:1px solid var(--line);color:var(--faint)}
+  .stage.pass{color:var(--accent);border-color:#1f4a3d}
+  .stage.hit{background:var(--bad);color:#2a0000;border-color:var(--bad);font-weight:700}
+  .stage.admit{background:var(--warn);color:#2a2000;border-color:var(--warn);font-weight:700}
+  .verdict{font-family:var(--mono);font-size:14px;padding:12px 14px;border-radius:9px;margin:10px 0 0}
+  .verdict.refused{background:#102a22;border:1px solid #1f4a3d;color:var(--accent)}
+  .verdict.admitted{background:#2a2410;border:1px solid #574a1c;color:var(--warn)}
+  .verdict.breach{background:#2a1010;border:1px solid var(--bad);color:var(--bad)}
+  .reason{color:var(--dim);font-size:12.5px;margin-top:4px;font-family:var(--mono)}
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  td,th{text-align:left;padding:5px 6px;border-bottom:1px solid var(--line)}
+  th{color:var(--faint);font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.06em}
+  .fam{font-family:var(--mono);color:var(--accent2)}
+  .big{font-size:26px;font-weight:800;font-family:var(--mono)}
+  .ok{color:var(--accent)} .no{color:var(--bad)} .dimr{color:var(--dim)}
+  .quest{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 0}
+  .quest .dot{width:8px;height:8px;border-radius:50%;background:var(--faint);flex:0 0 auto}
+  .quest.tried .dot{background:var(--warn)} .quest.won .dot{background:var(--gold)}
+  .foot{color:var(--faint);font-size:12.5px;margin:28px 0;line-height:1.7}
+  .foot a{color:var(--accent2)}
+  .rune{background:linear-gradient(135deg,#1a1405,#2a2008);border:1px solid var(--gold);border-radius:10px;
+    padding:12px 14px;margin-top:10px;font-family:var(--mono);font-size:12px;color:var(--gold);display:none}
+  .rune.show{display:block}
+  .pill{display:inline-block;font-family:var(--mono);font-size:11px;color:var(--faint);border:1px solid var(--line);
+    border-radius:20px;padding:2px 9px;margin-left:6px}
+  .live{color:var(--accent);animation:pulse 2s infinite}
+  @keyframes pulse{50%{opacity:.45}}
+</style>
+</head>
+<body>
+  <h1>BREAK<span class="x"> IT</span></h1>
+  <p class="tag">A white-box <b>verify-before-parse</b> gate with a living immune system and a cost law.
+    A naive app sits behind it. <b>Reach that app with anything malicious and you win.</b> This page runs the
+    <i>exact same kernel</i> the tests and CI gate &mdash; <span id="kstat" class="pill">booting kernel&hellip;</span></p>
+
+  <div class="rule">
+    You win if the <b>referee</b> &mdash; written independently of the gate &mdash; ever sees the app act on a
+    message the gate never admitted, a packet an independent grammar rejects, an action that doesn&rsquo;t match the
+    ledger, or a state that stops being a replay of the ledger. A win drops a signed, re-runnable <b>Breaker&rsquo;s Rune</b>.
+  </div>
+
+  <div class="grid two">
+    <div class="panel">
+      <h2>The target <span id="livedot" class="pill live">legit client sending&hellip;</span></h2>
+      <div class="kv"><span>pinned key (sender 1)</span><span id="pub" class="mono">&mdash;</span></div>
+      <div class="kv"><span>ledger length</span><span id="ledlen">0</span></div>
+      <div class="kv"><span>app state</span><span id="appstate" class="mono">{}</span></div>
+      <label>latest captured packet (hex) &mdash; the attacker&rsquo;s raw material</label>
+      <textarea id="captured" readonly></textarea>
+    </div>
+
+    <div class="panel">
+      <h2>Attack console</h2>
+      <div class="btns">
+        <button data-atk="replay">Replay last</button>
+        <button data-atk="forge">Forge (random key)</button>
+        <button data-atk="tamper">Tamper a byte</button>
+        <button data-atk="truncate">Truncate</button>
+        <button data-atk="schema">Schema escape</button>
+        <button data-atk="nodomain">Wrong domain</button>
+      </div>
+      <label>packet to send (hex) &mdash; edit it, break it however you like</label>
+      <textarea id="attack"></textarea>
+      <div class="btns">
+        <button class="primary" id="send">▶ Send to the gate</button>
+        <button id="loadlast">↻ load latest capture</button>
+      </div>
+      <div id="verdict" class="verdict refused">awaiting your first packet&hellip;</div>
+      <div class="ladder" id="ladder"></div>
+      <div id="reason" class="reason"></div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel">
+      <h2>The living immune system</h2>
+      <div class="kv"><span>attacks seen</span><span id="imm-events">0</span></div>
+      <div class="kv"><span>novel (vaccines minted)</span><span id="imm-novel">0</span></div>
+      <div class="kv"><span>antibodies (exact / shape)</span><span id="imm-ab">0 / 0</span></div>
+      <label>families fed so far</label>
+      <table><tbody id="fams"><tr><td class="dimr">nothing yet &mdash; attack it</td></tr></tbody></table>
+      <div id="lastimm" class="reason" style="margin-top:8px"></div>
+    </div>
+    <div class="panel">
+      <h2>The referee &mdash; the win oracle</h2>
+      <div class="kv"><span>messages checked</span><span id="ref-checked">0</span></div>
+      <div class="kv"><span>state == ledger replay</span><span id="ref-fold" class="ok">true</span></div>
+      <div class="kv"><span>breached</span><span id="ref-br" class="ok">false</span></div>
+      <div class="big" id="ref-big"><span class="ok">THE GATE HOLDS</span></div>
+      <div class="reason">Every admitted message is checked against the gate, the ledger, and a second,
+        independently written grammar. No packet has reached the app that shouldn&rsquo;t have.</div>
+      <div class="rune" id="rune"></div>
+    </div>
+  </div>
+
+  <div class="grid two" style="margin-top:16px">
+    <div class="panel">
+      <h2>The rebound law &mdash; attacking costs <i>you</i>, not it</h2>
+      <div class="reason" style="margin-bottom:8px">Each refusal stretches the membrane; past its elastic limit it
+        releases that stored energy back as proof-of-work the source must spend. We verify a token in <b>one</b> hash.
+        Nothing is emitted back onto the network.</div>
+      <table><thead><tr><th>your refusals</th><th>you pay (hashes)</th><th>we pay</th></tr></thead>
+      <tbody id="rebound"></tbody></table>
+      <div class="kv" style="margin-top:8px"><span>your refusals from this browser</span><span id="myref">0</span></div>
+      <div class="kv"><span>what you now owe</span><span id="myowe" class="mono">nothing</span></div>
+    </div>
+    <div class="panel">
+      <h2>Quests</h2>
+      <div id="quests"></div>
+      <div class="reason" style="margin-top:8px">Every refused attack is written to a hash-chained journal &mdash;
+        the feed the immune system eats from. Land a referee breach and the Legendary rune is yours.</div>
+    </div>
+  </div>
+
+  <p class="foot">
+    Kernel-backed: this page imports <span class="mono">src/wire · gate · immune · antibody · sentinel · rebound · chain · referee · loot · app</span>
+    &mdash; the same modules the mutation gate (<span class="mono">witness-all.mjs</span>) and the re-runnable red-team
+    receipt (<span class="mono">attack-kit/redteam.mjs --check</span>) prove in CI. Signatures use the browser&rsquo;s
+    WebCrypto Ed25519; the keypair is generated in <i>your</i> browser, so no secret is shipped. Nothing here calls home.<br>
+    Source, the attack kit, and how to run it locally: <a href="https://github.com/sjgant80-hub/break-it">github.com/sjgant80-hub/break-it</a>.
+    Credits: GEP ladder &mdash; Gary W. Floyd (Lumiea Systems Research Division, ThunderStruck Service LLC, 2025).
+  </p>
+
+<script type="module">
+import { rawCheck, headerOf, signedBytes, encodeUnsigned, withSignature, parse, MAGIC, VERSION, HEADER, SIG, OPS, DOMAIN } from './src/wire.mjs';
+import { decide, isAdmitted } from './src/gate.mjs';
+import { classify, fingerprint, learn, standing, detail, emptyMemory } from './src/immune.mjs';
+import { immuneStage, features, mint, adopt, recognise, emptyLibrary, PERMANENT } from './src/antibody.mjs';
+import { judge, freshState } from './src/sentinel.mjs';
+import { makeApp } from './src/app.mjs';
+import { makeReferee } from './src/referee.mjs';
+import { difficultyFor, released, REBOUND_LADDER, BITS } from './src/rebound.mjs';
+import { questLog } from './src/loot.mjs';
+
+// ── a compact, synchronous SHA-256 (so the real immune/antibody kernels run inline) ─────────────────────────
+const sha256 = (() => {
+  const K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,
+    0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,
+    0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,
+    0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,
+    0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,
+    0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,
+    0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  const rotr=(x,n)=>(x>>>n)|(x<<(32-n));
+  return (bytes)=>{
+    const l=bytes.length, bl=((l+8>>6)+1)<<6, buf=new Uint8Array(bl); buf.set(bytes); buf[l]=0x80;
+    const dv=new DataView(buf.buffer); dv.setUint32(bl-4, l*8);
+    const H=new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]);
+    const w=new Uint32Array(64);
+    for(let o=0;o<bl;o+=64){
+      for(let i=0;i<16;i++) w[i]=dv.getUint32(o+i*4);
+      for(let i=16;i<64;i++){const s0=rotr(w[i-15],7)^rotr(w[i-15],18)^(w[i-15]>>>3),s1=rotr(w[i-2],17)^rotr(w[i-2],19)^(w[i-2]>>>10);w[i]=(w[i-16]+s0+w[i-7]+s1)|0;}
+      let [a,b,c,d,e,f,g,h]=H;
+      for(let i=0;i<64;i++){const S1=rotr(e,6)^rotr(e,11)^rotr(e,25),ch=(e&f)^(~e&g),t1=(h+S1+ch+K[i]+w[i])|0,
+        S0=rotr(a,2)^rotr(a,13)^rotr(a,22),mj=(a&b)^(a&c)^(b&c),t2=(S0+mj)|0;
+        h=g;g=f;f=e;e=(d+t1)|0;d=c;c=b;b=a;a=(t1+t2)|0;}
+      H[0]=(H[0]+a)|0;H[1]=(H[1]+b)|0;H[2]=(H[2]+c)|0;H[3]=(H[3]+d)|0;H[4]=(H[4]+e)|0;H[5]=(H[5]+f)|0;H[6]=(H[6]+g)|0;H[7]=(H[7]+h)|0;
+    }
+    let out=''; for(let i=0;i<8;i++) out+=H[i].toString(16).padStart(8,'0'); return out;
+  };
+})();
+const bytesHashHex = (u8)=>sha256(u8);
+const toHex=(u8)=>Array.from(u8,b=>b.toString(16).padStart(2,'0')).join('');
+const fromHex=(h)=>{h=(h||'').replace(/[^0-9a-fA-F]/g,'');const o=new Uint8Array(h.length>>1);for(let i=0;i<o.length;i++)o[i]=parseInt(h.substr(i*2,2),16);return o;};
+const $=(id)=>document.getElementById(id);
+
+// ── WebCrypto Ed25519: generate the legit key in-browser, verify async, sign forgeries ──────────────────────
+let legitPriv, legitPubRaw, legitPubHex, keyset='';
+async function importPub(raw){ return crypto.subtle.importKey('raw', raw, {name:'Ed25519'}, false, ['verify']); }
+async function verifyAsync(msg, sig, pubRaw){ try{ return await crypto.subtle.verify('Ed25519', await importPub(pubRaw), sig, msg); }catch{ return false; } }
+async function signAsync(msg, priv){ return new Uint8Array(await crypto.subtle.sign('Ed25519', priv, msg)); }
+
+// ── the kernel-backed node, in memory ───────────────────────────────────────────────────────────────────────
+const counters=new Map(), senders=new Map();
+let memory=emptyMemory(), library=emptyLibrary(), app=makeApp(), referee=makeReferee();
+const packets=[], admittedHashes=new Set(); let myRefusals=0, captured=[];
+const keyFor=(id)=> id===1 ? legitPubRaw : null;
+const lastCounter=(id)=> counters.get(id) || 0n;
+
+// run the REAL gate: rawCheck + decide, with the signature pre-verified by WebCrypto (sync verify returns the cached bool)
+async function runGate(bytes){
+  const raw=rawCheck(bytes); let sigOk=false;
+  if(raw.ok){ const h=headerOf(bytes,raw.n); const key=keyFor(h.sender); if(key) sigOk=await verifyAsync(signedBytes(bytes,raw.n), h.sig, key); }
+  const ctx={ keyFor, verify:()=>sigOk, lastCounter };
+  return decide(bytes, ctx);
+}
+
+function applyAdmitted(v, bytes){
+  const s=judge(senders.get(v.msg.sender)||freshState(), v.msg); senders.set(v.msg.sender,s.state);
+  if(!s.allow) return {blocked:true, level:s.level, reason:s.reason};
+  counters.set(v.msg.sender, v.msg.counter); packets.push(bytes); admittedHashes.add(bytesHashHex(bytes));
+  app.apply(v.msg); const breach=referee.after(v.msg, bytes); return {breach};
+}
+
+// learn from a refusal, exactly as the server does (classify → fingerprint → learn → mint/adopt)
+function antigen(bytes, refusal, source){
+  const stage=immuneStage(refusal);
+  const decl=bytes.length>=16?(bytes[14]<<8)|bytes[15]:null;
+  const family=classify(refusal,{bytes,declaredLength:decl,exactReplay:refusal.stage==='counter'&&admittedHashes.has(bytesHashHex(bytes))});
+  const print=fingerprint(family,{bytes}); const l=learn(memory,{family,print,source}); memory=l.memory;
+  if(PERMANENT.includes(stage)){ const ab=mint(bytes,{hash:bytesHashHex(bytes),stage,keyset,family}); library=adopt(library,[ab.exact,ab.shape].filter(Boolean)).library; }
+  else { library=adopt(library,[mint(bytes,{stage,family}).shape]).library; }
+  return {family,print,novel:l.novel};
+}
+
+async function sendPacket(bytes, source){
+  // on-sight recognition (the real antibody library)
+  const hash=bytesHashHex(bytes);
+  const seen=recognise(library, hash, null, keyset);
+  const gv=await runGate(bytes);
+  if(seen.drop && !gv.admit){ return {stage:'recognised', reason:'a known attack — recognised on sight by an exact antibody ('+seen.family+')', family:seen.family, recognised:true}; }
+  if(!gv.admit){ if(source==='you') myRefusals++; const a=antigen(bytes,gv,source); return {stage:gv.stage, reason:gv.reason, ...a}; }
+  // admitted → sentinel + ledger + app + referee
+  const r=applyAdmitted(gv, bytes);
+  if(r.blocked){ if(source==='you') myRefusals++; const a=antigen(bytes,{stage:'behavior',reason:r.level+' — '+r.reason,sender:gv.msg.sender},source); return {stage:'behavior', reason:r.reason, ...a}; }
+  return {stage:'admitted', admit:true, breach:r.breach, msg:gv.msg};
+}
+
+// ── the legit client (local to this browser) ────────────────────────────────────────────────────────────────
+const KEYS=['balance','name','status','visits','note','level'], VALS=['active','ok','hello world','green','ready','v1.2'];
+let cc=1n, ci=0;
+function nextOp(i){ const key=KEYS[i%KEYS.length]; if(i%11===10) return {op:OPS.DEL,key}; if(i%3===0) return {op:OPS.SET,key,value:VALS[i%VALS.length]}; return {op:OPS.ADD,key,delta:(i%7)+1}; }
+async function legitTick(){
+  const u=encodeUnsigned({sender:1,counter:cc,...nextOp(ci++)}); if(!u) return;
+  const n=(u[14]<<8)|u[15];
+  const sig=await signAsync(signedBytes(new Uint8Array([...u,...new Uint8Array(SIG)]),n), legitPriv);
+  const pkt=withSignature(u,sig); cc+=1n;
+  const r=await sendPacket(pkt,'legit');
+  if(r.admit){ captured.push(pkt); if(captured.length>12) captured.shift(); render(); }
+}
+
+// ── attacks (all build from the latest capture, or from scratch) ────────────────────────────────────────────
+const last=()=> captured.length? captured[captured.length-1] : null;
+async function buildAttack(kind){
+  const base=last();
+  if(kind==='replay') return base? toHex(base) : '';
+  if(kind==='tamper'){ if(!base) return ''; const b=base.slice(); const i=HEADER+1+Math.floor(Math.random()*8); b[i]^=0x40; return toHex(b); }
+  if(kind==='truncate'){ if(!base) return ''; return toHex(base.slice(0,base.length-1-Math.floor(Math.random()*8))); }
+  if(kind==='forge'){ const kp=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']);
+    const u=encodeUnsigned({sender:1,counter:(lastCounter(1)+1n),op:OPS.SET,key:'name',value:'mallory'}); const n=(u[14]<<8)|u[15];
+    const sig=new Uint8Array(await crypto.subtle.sign('Ed25519',kp.privateKey,signedBytes(new Uint8Array([...u,...new Uint8Array(SIG)]),n)));
+    return toHex(withSignature(u,sig)); }
+  if(kind==='nodomain'){ const u=encodeUnsigned({sender:1,counter:(lastCounter(1)+1n),op:OPS.SET,key:'name',value:'x'});
+    const sig=await signAsync(new Uint8Array([...u]), legitPriv); return toHex(new Uint8Array([...u,...sig])); }
+  if(kind==='schema'){ // a payload the grammar forbids (upper-case key), signed by the legit key
+    const body=[OPS.SET,4,0x4e,0x61,0x6d,0x65,1,0x78]; const u=new Uint8Array(HEADER+body.length);
+    u.set(MAGIC,0);u[4]=VERSION;u[5]=1;new DataView(u.buffer).setBigUint64(6,(lastCounter(1)+1n));u[14]=0;u[15]=body.length;u.set(body,HEADER);
+    const sig=await signAsync(signedBytes(new Uint8Array([...u,...new Uint8Array(SIG)]),body.length), legitPriv);
+    return toHex(new Uint8Array([...u,...sig])); }
+  return '';
+}
+
+// ── render ──────────────────────────────────────────────────────────────────────────────────────────────────
+const STAGES=['size','magic','schema','sender','signature','counter','admitted'];
+function showResult(res){
+  const v=$('verdict'), lad=$('ladder'); lad.innerHTML='';
+  const hitIdx = res.stage==='recognised'||res.stage==='behavior' ? 99 : STAGES.indexOf(res.stage);
+  STAGES.forEach((s,i)=>{ const el=document.createElement('span'); el.className='stage'+(res.admit&&s==='admitted'?' admit':(i===hitIdx?' hit':(hitIdx>i||res.admit?' pass':''))); el.textContent=s; lad.appendChild(el); });
+  if(res.stage==='recognised'||res.stage==='behavior'){ const el=document.createElement('span'); el.className='stage hit'; el.textContent=res.stage; lad.appendChild(el); }
+  if(res.admit){ v.className='verdict admitted'; v.textContent='ADMITTED — a VALID packet (this is how the legit client gets through; it is not a win)'; }
+  else { v.className='verdict refused'; v.textContent='REFUSED at "'+res.stage+'"'+(res.novel?' — NEW attack, vaccine minted':res.recognised?' — recognised on sight':''); }
+  if(res.breach){ v.className='verdict breach'; v.textContent='★ REFEREE BREACH — you reached the app! ★'; dropRune(res); }
+  $('reason').textContent=res.reason||'';
+  if(res.family){ $('lastimm').textContent='family: '+res.family+(res.print?'   fingerprint: '+res.print:''); }
+  render();
+}
+function dropRune(res){
+  $('ref-br').textContent='true'; $('ref-br').className='no'; $('ref-big').innerHTML='<span class="no">BROKEN — THE RUNE IS YOURS</span>';
+  const r=$('rune'); r.className='rune show'; r.textContent='⟐ THE BREAKER\'S RUNE ⟐  tier: LEGENDARY  —  you did what the gate swore could not happen. Log it in FINDINGS.md.';
+}
+function render(){
+  $('pub').textContent = legitPubHex ? legitPubHex.slice(0,16)+'…' : '—';
+  $('ledlen').textContent = packets.length;
+  $('appstate').textContent = JSON.stringify(app.state());
+  const b=last(); if(b){ $('captured').value=toHex(b); }
+  $('imm-events').textContent=memory.events; $('imm-novel').textContent=memory.novel;
+  $('imm-ab').textContent=Object.keys(library.exact).length+' / '+library.shapes.length;
+  const fams=Object.entries(memory.families).sort((a,b)=>b[1]-a[1]);
+  $('fams').innerHTML = fams.length? fams.map(([f,n])=>`<tr><td class="fam">${f}</td><td>${n}</td></tr>`).join('') : '<tr><td class="dimr">nothing yet — attack it</td></tr>';
+  $('ref-checked').textContent=referee.checked;
+  const fold=referee.fold(app,packets); $('ref-fold').textContent=String(fold); $('ref-fold').className=fold?'ok':'no';
+  if(!referee.breaches.length){ $('ref-br').textContent='false'; $('ref-br').className='ok'; }
+  $('myref').textContent=myRefusals; const owe=difficultyFor(myRefusals); $('myowe').textContent= owe? owe+' bits of proof-of-work':'nothing';
+  const ql=questLog(packets.map(()=>({})).concat(Object.entries(memory.families).flatMap(([f,n])=>Array.from({length:n},()=>({family:f,novel:false,source:'you'})))));
+  $('quests').innerHTML=ql.quests.map(q=>{const tried=q.attempts>0;return `<div class="quest ${q.won?'won':tried?'tried':''}"><span class="dot"></span><span>${q.name}</span><span class="dimr" style="margin-left:auto">${tried?q.attempts+'× refused':'—'}</span></div>`;}).join('');
+}
+function renderRebound(){
+  const rungs=[0, REBOUND_LADDER.BLOCK, REBOUND_LADDER.ISOLATE];
+  $('rebound').innerHTML=rungs.map(r=>{const bits=difficultyFor(r);const pay=released(r);return `<tr><td>${r}${r===0?' (fine)':''}</td><td class="fam">${pay.toLocaleString()}</td><td class="ok">1</td></tr>`;}).join('');
+}
+
+// ── wire up ─────────────────────────────────────────────────────────────────────────────────────────────────
+document.querySelectorAll('[data-atk]').forEach(btn=>btn.addEventListener('click', async ()=>{ $('attack').value=await buildAttack(btn.dataset.atk); }));
+$('loadlast').addEventListener('click', ()=>{ const b=last(); if(b) $('attack').value=toHex(b); });
+$('send').addEventListener('click', async ()=>{ const hex=$('attack').value.trim(); if(!hex) return; const res=await sendPacket(fromHex(hex),'you'); showResult(res); });
+
+(async function boot(){
+  try{
+    if(!crypto?.subtle || !('Ed25519' in {})) { /* feature test below */ }
+    const kp=await crypto.subtle.generateKey({name:'Ed25519'},true,['sign','verify']);
+    legitPriv=kp.privateKey; legitPubRaw=new Uint8Array(await crypto.subtle.exportKey('raw',kp.publicKey)); legitPubHex=toHex(legitPubRaw);
+    keyset=sha256(new TextEncoder().encode(JSON.stringify([[1,legitPubHex]])));
+    $('kstat').textContent='kernel live'; $('kstat').style.color='var(--accent)';
+    renderRebound();
+    for(let i=0;i<4;i++) await legitTick();   // seed a little legit history
+    render();
+    setInterval(legitTick, 3500);
+  }catch(e){
+    console.error('BOOT FAILED:', e);
+    $('kstat').textContent='this browser lacks WebCrypto Ed25519 — try a recent Chromium';
+    $('kstat').style.color='var(--bad)';
+    $('verdict').textContent='The gate kernel loaded, but your browser can\'t do Ed25519 in WebCrypto, so live signing is off. The code and the full attack kit run under Node — see the repo link below.';
+  }
+})();
+</script>
+</body>
+</html>

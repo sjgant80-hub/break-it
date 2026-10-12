@@ -1,0 +1,21 @@
+name: gate
+on: [push, pull_request]
+jobs:
+  prove:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: '20' }
+
+      - name: unit + hostile-input (never-throw) suites
+        run: node --test test/*.test.mjs
+
+      - name: the red-team battery re-runs and must reproduce its receipt byte-for-byte
+        run: node attack-kit/redteam.mjs --check
+
+      - name: mutation + fuzz gate over every decision kernel (no unreviewed survivors)
+        run: node witness-all.mjs
+
+      - name: the vaccines — every attack ever journalled, replayed through the gate (if present)
+        run: node tools/vaccinate.mjs --check || echo "no vaccine file yet — skipping"

@@ -1,0 +1,21 @@
+BREAK IT — credits and provenance
+
+This project is built on the trust-rail discipline of its estate: a mutation + fuzz
+gate ("witness") that proves a test suite actually tests what it names, and a
+re-runnable receipt (proof-of-play) that a third party regenerates byte-for-byte
+rather than taking on trust. The Sentinel behaviour layer here follows that lineage.
+
+The GEP ladder used by the Sentinel behaviour guard (ALLOW / THROTTLE / STEP-UP /
+BLOCK / ISOLATE) is from the work of:
+  Gary W. Floyd — Lumiea Systems Research Division, ThunderStruck Service LLC,
+  "GEP-Based Security: Behavioral Entropy Signatures for Cybersecurity and DevOps" (2025).
+The GEP framing is credited to that work; it is not reproduced here beyond the ladder
+concept, and no estate-private material is inserted into it.
+
+The compression and codec lineage the estate builds on (κ / the Konomi codec and the
+LIGHT template work) is the work of Thomas Frumkin (Konomi). BREAK IT does not ship a
+codec; the credit is recorded because this build descends from that body of work.
+
+Everything in this repository — the wire format, the gate, the immune system, the
+rebound cost law, the ledger, the referee and the attack kit — is original to this
+build and released under the MIT License (see LICENSE).

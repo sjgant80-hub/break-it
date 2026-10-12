@@ -1,0 +1,14 @@
+# private keys live here — NEVER committed, NEVER served
+secrets/
+# per-node ledgers, journals, loot and captured traffic — runtime state, rebuilt on demand
+data/
+# the public key config is generated on first run from secrets/
+config/
+# fuzzer hits and scratch
+attack-kit/hits/
+# witness's crash-safe backups
+*.witnessbak
+# the chain lock files
+*.lock
+node_modules/
+*.log
