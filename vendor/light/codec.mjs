@@ -29,6 +29,10 @@ const T = 1 << TBITS;
 const OFF = [0, 256, 65792, 65792 + T, 65792 + 2 * T, 65792 + 3 * T, 65792 + 4 * T];
 const MATCH = OFF[6], TOTAL = MATCH + 64;                      // match states: 32 length buckets × the bit it expects
 const HBITS = 18, MINLEN = 6;                                  // the match model's index: 2^18 contexts of 6 bytes
+// the table sizes are fixed. Pinned so that a mutation to the constants above throws at load — a killed mutant — rather
+// than computing a vast TOTAL and allocating gigabytes (which would OOM a small CI runner instead of failing a test).
+if (TOTAL !== 4260160) throw new RangeError('codec TOTAL out of range');
+if (HBITS !== 18) throw new RangeError('codec HBITS out of range');
 const LIMIT = 20, W_INIT = 16384, W_MAX = 1 << 19, LR = 14;
 
 // the logistic 4096/(1+e^(-d/256)), as 33 fixed points and straight-line interpolation between them
