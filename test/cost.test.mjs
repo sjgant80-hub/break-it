@@ -14,13 +14,13 @@ test('the committed source file passes its own check, and every source names a p
   assert.equal(r.ok, true);
   assert.equal(r.prices, P);
   for (const s of FILE.sources) { assert.match(s.url, /^https:\/\//); assert.equal(s.read, '2026-10-25'); assert.ok(s.what.length > 20); }
-  assert.deepEqual(FILE.sources.map((s) => s.id), ['aws-waf', 'aws-apigw', 'ofgem-cap', 'intel-i7-1255u', 'boe-fx', 'ibm-breach']);
+  assert.deepEqual(FILE.sources.map((s) => s.id), ['aws-waf', 'aws-apigw', 'ofgem-cap', 'intel-i7-1255u', 'boe-fx', 'ibm-breach', 'uk-nlw']);
 });
 
 test('pricesFrom refuses a file with any price missing, zero, fractional or off the cap', () => {
   assert.deepEqual(pricesFrom(null), { ok: false, why: 'no prices' });
   assert.deepEqual(pricesFrom({ prices: 'x' }), { ok: false, why: 'no prices' });
-  for (const k of ['wafAclCents', 'wafRuleCents', 'wafPerMillionCents', 'maxRequests', 'unitRateCentiPence', 'fx10k', 'laptopBaseWatts', 'laptopMaxWatts', 'breachUsd']) {
+  for (const k of ['wafAclCents', 'wafRuleCents', 'wafPerMillionCents', 'maxRequests', 'unitRateCentiPence', 'fx10k', 'laptopBaseWatts', 'laptopMaxWatts', 'breachUsd', 'nlwPence']) {
     for (const bad of [0, -1, 1.5, '5', undefined]) {
       const r = pricesFrom({ prices: { ...P, [k]: bad } });
       assert.equal(r.ok, false, k + '=' + bad);

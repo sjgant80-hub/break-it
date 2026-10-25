@@ -8,14 +8,17 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
 
-      - name: unit + hostile-input (never-throw) suites
+      - name: unit + hostile-input (never-throw) suites, and the live page's own gate
         run: node --test test/*.test.mjs
 
       - name: the red-team battery re-runs and must reproduce its receipt byte-for-byte
         run: node attack-kit/redteam.mjs --check
 
-      - name: mutation + fuzz gate over every decision kernel (no unreviewed survivors)
-        run: node witness-all.mjs
+      - name: the Liveware Pilot's receipt re-checked (ledger and books re-derived from the feed, the judge re-run, a real node on 3,000 records)
+        run: node pilot/check.mjs
+
+      - name: mutation + fuzz gate over every decision kernel (no unreviewed survivors); its receipt must come out byte-for-byte the same
+        run: node witness-all.mjs --receipt && git diff --exit-code -- receipts/witness.json
 
       - name: the vaccines — every attack ever journalled, replayed through the gate (if present)
         run: node tools/vaccinate.mjs --check || echo "no vaccine file yet — skipping"

@@ -1,0 +1,280 @@
+{
+ "kind": "break-it.pilot.receipt",
+ "v": 1,
+ "sealed": [
+  {
+   "path": "pilot/claims.json",
+   "commit": "c75c903c21997fa1b26dad673537685d89c15f53",
+   "claimsSha256": "9bb797e4b7cb3749c8c9ac726757445fac1b58bfa0ee3aab04e8eb9f07d1ebc3",
+   "measuringCodeCommittedAtSeal": false
+  },
+  {
+   "path": "pilot/claims-2.json",
+   "commit": "9c82973da787d8b107e015eef5a77fcfdef5d540",
+   "claimsSha256": "9824e6004f612a68ebde1fba1c298ae0a4feb3c1214f6e9842d9237d193d1324",
+   "measuringCodeCommittedAtSeal": false
+  }
+ ],
+ "code": {
+  "commit": "4c179a477e1146ee8b0f92e0a56da18ca6ca5b46",
+  "uncommittedChanges": false
+ },
+ "ran": {
+  "at": "2026-10-25T11:35:40.192Z",
+  "cpu": "12th Gen Intel(R) Core(TM) i7-1255U",
+  "cores": 12,
+  "os": "win32 10.0.26200",
+  "node": "v25.7.0"
+ },
+ "feed": {
+  "sha256": "4edce6da569b2c30788a85fd98a9bafb1a983e8ca1a7aac875dd7ff853cbd0bb",
+  "records": 180000,
+  "accounts": 30000
+ },
+ "deterministic": {
+  "ledgerHead": "22984447fb15cf03b5a32d2ee330788f9d7618fb591f6b785a3f3f28428d0069",
+  "derivedHead": "22984447fb15cf03b5a32d2ee330788f9d7618fb591f6b785a3f3f28428d0069",
+  "ledgerEntries": 180000,
+  "booksSha256": "0009453daae7f234282a830c025aa1f9538bae152796303d4ad373c6cf70c641",
+  "feedBooksSha256": "0009453daae7f234282a830c025aa1f9538bae152796303d4ad373c6cf70c641"
+ },
+ "facts": {
+  "admitted": 180000,
+  "ledgerEntries": 180000,
+  "genuineRefused": 0,
+  "retries": 0,
+  "books": {
+   "equal": true,
+   "mismatches": 0,
+   "keys": 210000,
+   "accounts": 30000
+  },
+  "seconds": 925,
+  "perSecond": 194.6,
+  "egress": {
+   "tcp": 0,
+   "tls": 0,
+   "udp": 0,
+   "dns": 1,
+   "fetch": 0,
+   "afterListening": 0,
+   "seen": [
+    "dns lookup 127.0.0.1 (before listening)"
+   ],
+   "listening": [
+    "127.0.0.1:63407"
+   ],
+   "outbound": 1
+  },
+  "canarySeen": true,
+  "listening": [
+   "127.0.0.1:63407"
+  ],
+  "injections": [
+   {
+    "kind": "replay",
+    "at": 25714,
+    "first": {
+     "status": 403,
+     "stage": "counter"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   },
+   {
+    "kind": "flip",
+    "at": 51428,
+    "first": {
+     "status": 403,
+     "stage": "signature"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   },
+   {
+    "kind": "unpinned",
+    "at": 77142,
+    "first": {
+     "status": 403,
+     "stage": "signature"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   },
+   {
+    "kind": "nodomain",
+    "at": 102856,
+    "first": {
+     "status": 403,
+     "stage": "signature"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   },
+   {
+    "kind": "truncated",
+    "at": 128570,
+    "first": {
+     "status": 403,
+     "stage": "size"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   },
+   {
+    "kind": "out-of-range",
+    "at": 154284,
+    "first": {
+     "status": 403,
+     "stage": "schema"
+    },
+    "second": {
+     "status": 403,
+     "stage": "recognised"
+    }
+   }
+  ],
+  "referee": {
+   "breached": false,
+   "foldMatches": true,
+   "checked": 180000
+  },
+  "redteam": {
+   "exit": 0,
+   "cases": 79,
+   "held": true
+  },
+  "explained": {
+   "answers": 12,
+   "unexplained": 0,
+   "journal": 12,
+   "journalUnexplained": 0
+  },
+  "chain": {
+   "ok": true,
+   "head": "22984447fb15cf03b5a32d2ee330788f9d7618fb591f6b785a3f3f28428d0069"
+  },
+  "derivedHead": "22984447fb15cf03b5a32d2ee330788f9d7618fb591f6b785a3f3f28428d0069",
+  "nodeStats": {
+   "admitted": 180000,
+   "refused": 12,
+   "recognised": 6,
+   "breaches": 0,
+   "shared": 0,
+   "shareDropped": 0,
+   "adoptedFromPeers": 0,
+   "autoimmune": 0,
+   "flooded": 0,
+   "rebounded": 0
+  },
+  "antibodies": {
+   "exact": 6,
+   "shapes": 4
+  },
+  "canary": {
+   "tcp": 1,
+   "tls": 0,
+   "udp": 1,
+   "dns": 1,
+   "fetch": 1,
+   "afterListening": 0,
+   "seen": [
+    "tcp : (before listening)",
+    "udp \"udp4\" (before listening)",
+    "dns lookup localhost (before listening)",
+    "fetch http://127.0.0.1:9/ (before listening)"
+   ],
+   "listening": [],
+   "outbound": 4
+  }
+ },
+ "verdicts": [
+  {
+   "id": "coo-1",
+   "role": "COO",
+   "claim": "A real node admits all 180,000 payment records of the feed, in order. Not one genuine record is refused or lost.",
+   "measured": "180000 admitted, 180000 in the ledger, 0 genuine refused (0 rate-limit retries)",
+   "held": true
+  },
+  {
+   "id": "coo-2",
+   "role": "COO",
+   "claim": "The books equal the feed exactly: for every one of the 30,000 accounts the posted balance is the sum of its six payments, and every account-month holds its own amount.",
+   "measured": "equal across 210000 keys, 30000 accounts",
+   "held": true
+  },
+  {
+   "id": "coo-3",
+   "role": "COO",
+   "claim": "The node sustains at least 100 records a second over the whole feed on this laptop, with every record's signature checked and the record written to disk (fsync) before the app sees it.",
+   "measured": "194.6 records a second (925 s for 180000)",
+   "held": true
+  },
+  {
+   "id": "ciso-1",
+   "role": "CISO",
+   "claim": "The node process opens no outbound connection during the whole run: 0 TCP or TLS connects, 0 UDP sockets, 0 DNS lookups, 0 fetches.",
+   "measured": "outbound 1 (tcp 0, tls 0, udp 0, dns 1, fetch 0); the canary was seen",
+   "held": false
+  },
+  {
+   "id": "ciso-2",
+   "role": "CISO",
+   "claim": "The node listens on 127.0.0.1 only.",
+   "measured": "listening on 127.0.0.1:63407",
+   "held": true
+  },
+  {
+   "id": "sec-1",
+   "role": "Security",
+   "claim": "Six known attack shapes injected mid-feed are each refused at the gate the first time and dropped on sight by an antibody the second time, and the feed around them is untouched: a replayed record, a record with one byte flipped, a record signed by a key that is not pinned, a record signed without the domain prefix, a truncated record, and an out-of-range record signed with the genuine key.",
+   "measured": "replay: counter → recognised; flip: signature → recognised; unpinned: signature → recognised; nodomain: signature → recognised; truncated: size → recognised; out-of-range: schema → recognised",
+   "held": true
+  },
+  {
+   "id": "sec-2",
+   "role": "Security",
+   "claim": "The independent referee finds 0 breaches, and its fold of the ledger matches the app's state.",
+   "measured": "0 breaches, fold matches, 180000 checked",
+   "held": true
+  },
+  {
+   "id": "sec-3",
+   "role": "Security",
+   "claim": "The white-box red-team battery re-runs and reproduces its committed receipt byte for byte: 79 cases, every one held.",
+   "measured": "79 cases, all held, --check exit 0",
+   "held": true
+  },
+  {
+   "id": "reg-1",
+   "role": "Regulator",
+   "claim": "Every refusal the node makes carries a named stage and a plain-words reason, both in its HTTP answer and in its hash-chained journal; the ledger's hash chain verifies end to end, and its head can be re-derived offline from the feed alone.",
+   "measured": "12 refusal answers (0 unexplained), 12 journal records (0 unexplained); chain verifies, head equals the offline derivation",
+   "held": true
+  },
+  {
+   "id": "ciso-3",
+   "role": "CISO",
+   "claim": "The only outbound attempt the node process makes is Node resolving the literal 127.0.0.1 it binds to, before it listens. From the moment it is listening to the end of the run (the whole feed, the injections, every read-back) it makes 0 outbound attempts of any kind.",
+   "measured": "0 attempts after listening; before: dns lookup 127.0.0.1 (before listening); the canary was seen",
+   "held": true
+  }
+ ],
+ "held": 9,
+ "failed": 1,
+ "attempts": [
+  "a --limit 2000 look after the seal: 6 of 9 held; it found the one DNS call (Node resolving its bind literal), which led to the addendum ciso-3, sealed before any full run",
+  "the first full run stopped at about 10,000 records: the sender opened a new TCP connection for every record (Node drops kept-alive sockets when the server hints a 1 s keep-alive) and Windows ran out of ephemeral ports. The sender now keeps one connection; nothing in the node changed. This receipt is the next full run."
+ ],
+ "rerun": "node pilot/measure.mjs (the whole pilot, about as long as it took here) · node pilot/check.mjs (CI: the ledger and books re-derived from the feed alone, and a real node re-run on the first 3,000 records)"
+}

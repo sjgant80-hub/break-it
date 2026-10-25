@@ -13,6 +13,7 @@
 //   referee   — the win oracle: the independent grammar + the tripwire + the fold
 //   loot      — the signed Legendary rune's material (what the breach certificate commits to)
 //   feed      — the partner feed read as records, and the books a faithful ingest must end with
+//   judge     — the pilot's judge: each sealed claim held against what was measured (pilot/judge.mjs)
 //   cost      — the CFO's case: the managed-cloud bill against the node's, from the buyer's figures and sourced prices
 //
 // NOT gated here, each with its reason:
@@ -27,6 +28,7 @@
 import { runMutations } from './.witness/witness.mjs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { writeFileSync } from 'node:fs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 // each kernel's own unit test, plus the shared hostile-input battery (fuzz.test.mjs) — the latter kills the
@@ -44,9 +46,11 @@ export const PAIRS = [
   ['src/loot.mjs', ['test/loot.test.mjs', 'test/fuzz.test.mjs']],
   ['src/cost.mjs', ['test/cost.test.mjs']],
   ['src/feed.mjs', ['test/feed.test.mjs']],
+  ['pilot/judge.mjs', ['test/pilot.test.mjs']],
 ];
 
-const only = process.argv.slice(2);
+const RECEIPT = process.argv.includes('--receipt');                  // also write receipts/witness.json (the page reads it)
+const only = process.argv.slice(2).filter((a) => a !== '--receipt');
 let allClean = true;
 const rows = [];
 for (const [src, tests] of PAIRS) {
@@ -55,7 +59,7 @@ for (const [src, tests] of PAIRS) {
   const t0 = Date.now();
   const r = runMutations(join(HERE, src), { cwd: HERE, cap: 5000, timeout: 60000, testCmd: ['node', '--test', ...testFiles] });
   const secs = ((Date.now() - t0) / 1000).toFixed(1);
-  rows.push({ src, killed: r.killed, total: r.total, survived: r.survived.length, ignored: r.ignored.length, capped: r.capped, secs });
+  rows.push({ src, killed: r.killed, total: r.total, survived: r.survived.length, ignored: r.ignored.length, capped: r.capped, secs, clean: r.clean && !r.capped });
   console.log(`${r.clean && !r.capped ? '✓' : '✗'} ${src.padEnd(18)} ${String(r.killed).padStart(4)}/${String(r.total).padEnd(4)} killed` +
     `${r.ignored.length ? ` · ${r.ignored.length} reviewed-equivalent` : ''}${r.capped ? ` · CAPPED at ${r.capped}` : ''} · ${secs}s  (${testFiles.length} files)`);
   for (const s of r.survived) console.log(`    SURVIVED line ${s.line}: ${s.mutation} :: ${s.snippet}`);
@@ -63,4 +67,6 @@ for (const [src, tests] of PAIRS) {
 }
 const k = rows.reduce((a, r) => a + r.killed, 0), n = rows.reduce((a, r) => a + r.total, 0);
 console.log(`\n${allClean ? 'WITNESS CLEAN' : 'WITNESS NOT CLEAN'} — ${k}/${n} mutants killed across ${rows.length} kernel(s)`);
+if (RECEIPT && !only.length) writeFileSync(join(HERE, 'receipts/witness.json'), JSON.stringify({ kind: 'break-it.witness', v: 1, clean: allClean, killed: k, total: n,
+  kernels: rows.map(({ src, killed, total, ignored, survived, clean }) => ({ src, killed, total, ignored, survived, clean })) }, null, 1) + String.fromCharCode(10));
 process.exit(allClean ? 0 : 1);

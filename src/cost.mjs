@@ -40,7 +40,7 @@ function bandsOk(b, total) {
 export function pricesFrom(json) {
   const p = json && typeof json === 'object' ? json.prices : null;
   if (!p || typeof p !== 'object') return { ok: false, why: 'no prices' };
-  for (const k of ['wafAclCents', 'wafRuleCents', 'wafPerMillionCents', 'maxRequests', 'unitRateCentiPence', 'fx10k', 'laptopBaseWatts', 'laptopMaxWatts', 'breachUsd']) {
+  for (const k of ['wafAclCents', 'wafRuleCents', 'wafPerMillionCents', 'maxRequests', 'unitRateCentiPence', 'fx10k', 'laptopBaseWatts', 'laptopMaxWatts', 'breachUsd', 'nlwPence']) {
     if (!posInt(p[k])) return { ok: false, why: k + ' is not a positive integer' };
   }
   if (p.maxRequests !== RANGES.requests[1]) return { ok: false, why: 'maxRequests is not the calculator’s cap' };

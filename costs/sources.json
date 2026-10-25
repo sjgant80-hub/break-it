@@ -6,14 +6,37 @@
     "wafAclCents": 500,
     "wafRuleCents": 100,
     "wafPerMillionCents": 60,
-    "restBands": [[333000000, 350], [667000000, 280], [14000000000, 238]],
-    "httpBands": [[300000000, 100], [14700000000, 90]],
+    "restBands": [
+      [
+        333000000,
+        350
+      ],
+      [
+        667000000,
+        280
+      ],
+      [
+        14000000000,
+        238
+      ]
+    ],
+    "httpBands": [
+      [
+        300000000,
+        100
+      ],
+      [
+        14700000000,
+        90
+      ]
+    ],
     "maxRequests": 15000000000,
     "unitRateCentiPence": 2632,
     "fx10k": 13363,
     "laptopBaseWatts": 15,
     "laptopMaxWatts": 55,
-    "breachUsd": 4990000
+    "breachUsd": 4990000,
+    "nlwPence": 1271
   },
   "sources": [
     {
@@ -57,6 +80,13 @@
       "url": "https://www.ibm.com/reports/data-breach",
       "read": "2026-10-25",
       "quote": "The global average cost of a data breach, in USD: 4.99M"
+    },
+    {
+      "id": "uk-nlw",
+      "what": "National Living Wage (21 and over), £12.71 an hour from 1 April 2026: the legal floor, the hourly cost the case puts on staff time the journal’s automatic classification takes off your people",
+      "url": "https://www.gov.uk/government/news/national-living-wage-increases-to-1271-per-hour",
+      "read": "2026-10-25",
+      "quote": "£12.71 per hour, from 1 April 2026"
     }
   ]
 }
