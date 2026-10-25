@@ -1,0 +1,12 @@
+{
+  "kind": "break-it.pilot.claims",
+  "v": 1,
+  "sealed": "An addendum, sealed after a short look and before the full run. A --limit 2000 look found the node process makes one DNS call: Node's own net.Server.listen passing the bind address '127.0.0.1' through dns.lookup, which Node answers itself for an IP literal without asking any resolver. Claim ciso-1 in pilot/claims.json counts that call and stays as sealed; it will fail on its own rule, and the failure is kept. This addendum adds the claim a CISO actually needs, sealed before the full run. pilot/measure.mjs refuses to run if either file differs from its commit.",
+  "claims": [
+    {
+      "id": "ciso-3", "role": "CISO",
+      "claim": "The only outbound attempt the node process makes is Node resolving the literal 127.0.0.1 it binds to, before it listens. From the moment it is listening to the end of the run (the whole feed, the injections, every read-back) it makes 0 outbound attempts of any kind.",
+      "measure": "the egress meter writes every attempt down as before or after the process first listened; the attempts before must be exactly that one lookup, the attempts after must be 0, and the canary must have been seen"
+    }
+  ]
+}
