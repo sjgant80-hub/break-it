@@ -12,6 +12,7 @@
 //   rebound   — the cost law: proof-of-work difficulty, the elastic release, the ratchet
 //   referee   — the win oracle: the independent grammar + the tripwire + the fold
 //   loot      — the signed Legendary rune's material (what the breach certificate commits to)
+//   feed      — the partner feed read as records, and the books a faithful ingest must end with
 //   cost      — the CFO's case: the managed-cloud bill against the node's, from the buyer's figures and sourced prices
 //
 // NOT gated here, each with its reason:
@@ -42,6 +43,7 @@ export const PAIRS = [
   ['src/app.mjs', ['test/ingest.test.mjs', 'test/referee.test.mjs']],
   ['src/loot.mjs', ['test/loot.test.mjs', 'test/fuzz.test.mjs']],
   ['src/cost.mjs', ['test/cost.test.mjs']],
+  ['src/feed.mjs', ['test/feed.test.mjs']],
 ];
 
 const only = process.argv.slice(2);
