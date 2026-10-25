@@ -1,0 +1,62 @@
+{
+  "v": 1,
+  "read": "2026-10-25",
+  "rule": "Every figure here is a published list price or statistic, read from its primary page on the date given. The cost case multiplies them by the buyer's own volumes and figures. None of it is a price for break-it, which is MIT-licensed with no licence fee.",
+  "prices": {
+    "wafAclCents": 500,
+    "wafRuleCents": 100,
+    "wafPerMillionCents": 60,
+    "restBands": [[333000000, 350], [667000000, 280], [14000000000, 238]],
+    "httpBands": [[300000000, 100], [14700000000, 90]],
+    "maxRequests": 15000000000,
+    "unitRateCentiPence": 2632,
+    "fx10k": 13363,
+    "laptopBaseWatts": 15,
+    "laptopMaxWatts": 55,
+    "breachUsd": 4990000
+  },
+  "sources": [
+    {
+      "id": "aws-waf",
+      "what": "AWS WAF: a web ACL $5.00 a month, a rule $1.00 a month, $0.60 per million requests (up to the default 1,500 WCUs; more WCUs add $0.20 per million for each 500)",
+      "url": "https://aws.amazon.com/waf/pricing/",
+      "read": "2026-10-25",
+      "quote": "Request charges = $0.60/million * 10 million = $6.00 (the page's Case A: one web ACL, 19 rules, 10 million requests = $30.00)"
+    },
+    {
+      "id": "aws-apigw",
+      "what": "Amazon API Gateway: REST APIs $3.50 per million for the first 333 million, $2.80 for the next 667 million, $2.38 after that; HTTP APIs $1.00 per million for the first 300 million, $0.90 after that",
+      "url": "https://aws.amazon.com/api-gateway/pricing/",
+      "read": "2026-10-25",
+      "quote": "The tiers are read from the page's own worked examples (REST: 15 billion requests in US East; HTTP: 432 million). The calculator stops at 15 billion requests a month, the largest volume the page works through."
+    },
+    {
+      "id": "ofgem-cap",
+      "what": "Ofgem price cap, electricity, direct debit, Great Britain average, 1 October to 31 December 2026: 26.32p per kWh (standing charge 54.83p a day, paid whether a node runs or not, so it is left out)",
+      "url": "https://www.ofgem.gov.uk/information-consumers/energy-advice-households/get-energy-price-cap-standing-charges-and-unit-rates-region",
+      "read": "2026-10-25",
+      "quote": "There is no VAT on electricity from 1 October 2026 to 31 March 2027."
+    },
+    {
+      "id": "intel-i7-1255u",
+      "what": "Intel Core i7-1255U, the laptop chip the pilot ran on: Processor Base Power 15 W, Maximum Turbo Power 55 W. The cost case uses 55 W, the most the chip can draw, so it never understates the node's electricity",
+      "url": "https://www.intel.com/content/www/us/en/products/sku/226259/intel-core-i71255u-processor-12m-cache-up-to-4-70-ghz/specifications.html",
+      "read": "2026-10-25",
+      "quote": "Maximum Turbo Power: 55 W"
+    },
+    {
+      "id": "boe-fx",
+      "what": "Bank of England series XUDLUSS, spot exchange rate, US $ into sterling, 22 October 2026: 1.3363",
+      "url": "https://www.bankofengland.co.uk/boeapps/database/fromshowcolumns.asp?Travel=NIxAZxSUx&FromSeries=1&ToSeries=50&DAT=RNG&FD=1&FM=Oct&FY=2026&TD=24&TM=Oct&TY=2026&FNY=Y&CSVF=TT&html.x=66&html.y=26&SeriesCodes=XUDLUSS&UsingCodes=Y&Filter=N&title=XUDLUSS&VPD=Y",
+      "read": "2026-10-25",
+      "quote": "22 Oct 26 1.3363"
+    },
+    {
+      "id": "ibm-breach",
+      "what": "IBM and Ponemon Institute, Cost of a Data Breach Report 2026: the global average cost of a data breach is USD 4.99 million",
+      "url": "https://www.ibm.com/reports/data-breach",
+      "read": "2026-10-25",
+      "quote": "The global average cost of a data breach, in USD: 4.99M"
+    }
+  ]
+}
