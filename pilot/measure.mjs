@@ -21,7 +21,7 @@ import { judge, explained } from './judge.mjs';
 
 const arg = (k) => { const i = process.argv.indexOf(k); return i >= 0 ? Number(process.argv[i + 1]) : null; };
 const LIMIT = arg('--limit');
-const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8' });
+const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const say = (m) => process.stderr.write(m + '\n');
 
 // ── the seals: each claims file as it was committed (the first before any of this code existed)
@@ -128,6 +128,10 @@ const receipt = {
   deterministic: { ledgerHead: facts.chain.head, derivedHead, ledgerEntries: facts.ledgerEntries, booksSha256: booksHash(state), feedBooksSha256: booksHash(want) },
   facts: { ...facts, egress: { ...metered.egress }, nodeStats: metered.stats, antibodies: metered.antibodies, canary },
   verdicts: verdict.verdicts, held: verdict.held, failed: verdict.failed,
+  attempts: [
+    'a --limit 2000 look after the seal: 6 of 9 held; it found the one DNS call (Node resolving its bind literal), which led to the addendum ciso-3, sealed before any full run',
+    'the first full run stopped at about 10,000 records: the sender opened a new TCP connection for every record (Node drops kept-alive sockets when the server hints a 1 s keep-alive) and Windows ran out of ephemeral ports. The sender now keeps one connection; nothing in the node changed. This receipt is the next full run.',
+  ],
   rerun: 'node pilot/measure.mjs (the whole pilot, about as long as it took here) · node pilot/check.mjs (CI: the ledger and books re-derived from the feed alone, and a real node re-run on the first 3,000 records)',
 };
 writeFileSync(join(ROOT, 'receipts/pilot.json'), JSON.stringify(receipt, null, 1) + '\n');

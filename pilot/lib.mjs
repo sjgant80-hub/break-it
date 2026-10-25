@@ -47,7 +47,9 @@ export function startMetered(dir, { canary = false } = {}) {
 /** Ask the node to close; → its egress meter, stats and antibody counts. */
 export const stopMetered = (child) => new Promise((resolve) => { child.once('message', resolve); child.send({ bye: true }); });
 
-const agent = new http.Agent({ keepAlive: true, maxSockets: 1 });
+// one kept-alive socket: the node's keep-alive hint is 1 s, and Node's client (>= 24) subtracts a 1 s buffer from the hint by
+// default, which drops every socket at once and opens a new connection per record (that ran Windows out of ports)
+const agent = new http.Agent({ keepAlive: true, maxSockets: 1, agentKeepAliveTimeoutBuffer: 0 });
 /** POST raw bytes to /packet on one kept-alive socket. → { status, body } */
 export function post(url, bytes) {
   return new Promise((resolve, reject) => {
