@@ -20,7 +20,7 @@
 {"@type":"Question","name":"What does it cost to run compared with AWS WAF and API Gateway?","acceptedAnswer":{"@type":"Answer","text":"break-it is MIT-licensed with no licence fee; the running cost is the machine and its electricity. The page's cost case uses your own volumes with dated list prices: at AWS's own worked example of one web ACL, 19 rules and 10 million requests a month, WAF is $30.00 and a REST API Gateway adds $35.00, while one node drawing the laptop chip's 55 W maximum all month costs £10.57 at the Ofgem cap for October to December 2026."}},
 {"@type":"Question","name":"What counts as breaking it?","acceptedAnswer":{"@type":"Answer","text":"The referee decides, and it is written independently of the gate. You win if the app acts on a message the gate never admitted, if the gate admits a packet an independent grammar rejects, if an action does not match its ledger entry, or if the app's state stops being a replay of the ledger. A win mints a signed Breaker's Rune."}},
 {"@type":"Question","name":"Who supplies and supports it?","acceptedAnswer":{"@type":"Answer","text":"AI Native Solutions (ai-nativesolutions.com). The software is MIT-licensed and keeps running without us. Support, service levels, warranty and liability are agreed per deployment, in each deployment's agreement."}},
-{"@type":"Question","name":"Whose work does it build on?","acceptedAnswer":{"@type":"Answer","text":"The sentinel's behaviour ladder is Gary W. Floyd's GEP ladder (Lumiea Systems Research Division, ThunderStruck Service, LLC), published as Open Defensive Prior Art under Creative Commons. The product is powered by the Konomi architecture, created by Thomas Frumkin, used with his permission. The pilot's feed is the UCI Default of Credit Card Clients dataset by I.-C. Yeh and C.-H. Lien, CC BY 4.0."}}
+{"@type":"Question","name":"Whose work does it build on?","acceptedAnswer":{"@type":"Answer","text":"The sentinel's behaviour ladder is Gary W. Floyd's GEP ladder (Lumiea Systems Research Division, ThunderStruck Service, LLC; “GEP-Based Security: Behavioral Entropy Signatures for Cybersecurity and DevOps”, 2025), published as Open Defensive Prior Art under Creative Commons. The product is powered by the Konomi architecture, created by Thomas Frumkin, used with his permission. The pilot's feed is the UCI Default of Credit Card Clients dataset by I.-C. Yeh and C.-H. Lien, CC BY 4.0."}}
 ]}]}
 </script>
 </head>
@@ -75,6 +75,19 @@
     <li><b>Read the receipts.</b> The pilot section shows every claim we sealed in git before measuring a real node, with what was measured and whether it held. The failures stay on the page.</li>
     <li><b>Put in your figures.</b> The cost case takes your monthly volume and runs it against dated AWS list prices and your own electricity. Then <a href="#redteam">try to break it</a>: the console takes any bytes you like.</li>
   </ol>
+  <details><summary>Words used on this page</summary>
+    <dl class="faq">
+      <dt>Record, packet</dt><dd>One item of the feed (here: one client’s payment in one month), sent as a small packet of bytes with a header, the record and a signature.</dd>
+      <dt>Ed25519 signature</dt><dd>A 64-byte proof, made with the sender’s private key, that the sender made these exact bytes. Anyone with the public key can check it; nobody without the private key can make one.</dd>
+      <dt>Counter</dt><dd>A number in every packet that must be exactly one more than the sender’s last. A copied packet arrives with a number already used, so a replay is refused.</dd>
+      <dt>Verify before parse</dt><dd>Check the bytes are well-formed and signed by a known sender before any software reads what they say.</dd>
+      <dt>Antibody</dt><dd>A record of an attack the gate refused, kept so the same bytes are dropped on sight next time and similar ones are recognised by family.</dd>
+      <dt>Proof-of-work</dt><dd>A small puzzle a source must solve by trying many hashes. The rebound makes a repeat attacker solve one before each look; checking the answer takes one hash.</dd>
+      <dt>Ledger, journal</dt><dd>Two append-only files where each line commits to the one before it, so nothing can be removed or changed unnoticed. The ledger holds what was admitted; the journal holds what was refused and why.</dd>
+      <dt>fsync</dt><dd>Forcing a write all the way to the disk before going on, so an admitted record survives a crash.</dd>
+      <dt>Referee</dt><dd>Separate code that checks every admitted record against its own rules and the ledger. It decides whether anything got through that should not have.</dd>
+    </dl>
+  </details>
 </section>
 
 <section id="live" aria-labelledby="live-h">
@@ -153,6 +166,7 @@
   <p>Seals: <span id="p-seals"></span>. Receipt: <a href="receipts/pilot.json">receipts/pilot.json</a>. Re-run it yourself: <span class="mono">node pilot/measure.mjs</span> (the whole pilot) or <span class="mono">node pilot/check.mjs</span> (what CI runs: the ledger and the books re-derived from the feed alone, and a real node re-run on the first 3,000 records).</p>
   <h3>How we got here, including what went wrong</h3>
   <ul id="p-attempts"></ul>
+  <p>One more thing we found after the run: six test processes left over from earlier, unrelated work on the same laptop had been running flat out for days and were competing with the node for the whole pilot. They have been stopped. The 194.6 records a second is what the node did with them running, so it is a floor, not a ceiling; the receipt stays exactly as measured.</p>
   <div class="callout"><b>The CISO’s two claims, read straight.</b> ciso-1 was sealed as “0 DNS lookups”. The node makes one: when it starts, Node’s own listen() passes the address it binds to, the literal 127.0.0.1, through dns.lookup. Node answers an IP literal itself, and no resolver is asked. The claim as sealed counts the call, so it fails and stays failed. ciso-3 was sealed after that look and before the full run, and measures what a CISO needs to know: once the node is listening, it makes no outbound attempt of any kind.</div>
   <h3>The CFO’s receipt</h3>
   <p>The cost case is arithmetic, not a prediction, so it is not sealed. Its one measured input is the records a second one node sustained in this pilot. Run it with your figures in the next section.</p>
@@ -178,6 +192,9 @@
       <div><label for="c-share">% the journal takes off them</label><input id="c-share" type="number" min="0" max="100" step="1" value="100"></div>
     </div>
     <div id="c-out" aria-live="polite"></div>
+    <h4 class="mt">the same case as your volume grows</h4>
+    <div class="tablewrap"><table><thead><tr><th>requests a month</th><th>managed path</th><th>nodes</th><th>node path</th><th>you keep a year</th></tr></thead><tbody id="c-scale"></tbody></table></div>
+    <p class="tiny">Each row is the same kernel with your figures above and only the volume changed. The managed bill grows with every million requests; the node path grows only when the measured rate needs another machine.</p>
   </div>
   <p class="tiny">What the managed line leaves out, so it never overstates the saving against you: the compute behind the gateway that would have to check each signature, data transfer, logging and support plans. What the node line includes on purpose: the chip’s full 55 W every hour of the month, at the household price cap (the average UK business price was lower, 24.51p in the second quarter of 2026). The standing charge is paid whether a node runs or not, so it is left out.</p>
   <h3>Every price this case reads, with its source</h3>
@@ -288,7 +305,7 @@
   <div class="cols three">
     <div class="panel"><h4>CEO</h4><p>One way in, closed. The records the business runs on can come only from the partners whose keys you pinned. A leaked password, a spoofed API call or a replayed file gets nothing, and the proof is a public battery anyone can re-run.</p></div>
     <div class="panel"><h4>CFO</h4><p>The managed equivalent is metered per million requests and rises with volume. A node is a machine you own; its running cost is electricity. The cost case above takes your volumes and dated list prices, and adds nodes when your volume needs them. No licence fee, no per-seat bill.</p></div>
-    <div class="panel"><h4>COO</h4><p>It does the ingest, not just the filtering: 180,000 real records posted, with the app’s books equal to the feed on every one of 210,000 keys, while six attacks were refused around them. The feed did not stop for an attack.</p></div>
+    <div class="panel"><h4>COO</h4><p>It does the ingest, not just the filtering: 180,000 real records posted, with the app’s books equal to the feed on every one of 210,000 keys, while six attacks were refused around them. The feed did not stop for an attack. One laptop at the pilot’s 194.6 records a second carries about 16.8 million records a day.</p></div>
     <div class="panel"><h4>CTO and CISO</h4><p>Ed25519 per sender, a domain-separated signature, a strict counter, fail-closed on raw bytes. The node listens on loopback and makes no outbound connection, measured. A hash-chained ledger and attack journal. A mutation gate and a white-box red-team battery in CI.</p></div>
     <div class="panel"><h4>Engineering and data</h4><p>One wire format with a 16-byte header and a signed payload; the REC record carries an account, a month and an amount. A partner-side adapter of a few dozen lines writes it (<span class="mono">src/client.mjs</span> is the reference). Node 20, no dependencies, MIT.</p></div>
     <div class="panel"><h4>Compliance and the DPO</h4><p>Nothing goes to a third party, so there is no processor to contract and no transfer to assess. The gate reads only the fields the record needs. Every decision has a stage and a reason, and the ledger can be re-derived from the source feed by anyone holding it.</p></div>
@@ -315,6 +332,9 @@
     <li><b>Keys.</b> Each sender has its own Ed25519 key; the node holds only public keys. Rotating a key changes the key set, and antibodies bound to the old one stop firing for key-dependent stages.</li>
     <li><b>Fail-closed.</b> Any error inside the gate refuses. A ledger the gate would refuse stops the node from starting.</li>
     <li><b>Explained.</b> In the pilot every refusal, in the HTTP answer and in the journal, named its stage and gave its reason in words.</li>
+    <li><b>Where the node sits.</b> It listens on the machine’s own loopback address, so it has no port on your network. Whatever already brings the feed to you (your TLS endpoint, VPN or file drop) hands each record to the node on the same machine, and your network edge stays exactly as you run it today.</li>
+    <li><b>What is read before the gate.</b> Node’s own HTTP layer reads the request line and headers, capped at 8 KB, with a 2-second header and 3-second request timeout, a required Content-Length and no chunked bodies. The record itself is not read by anything until every gate stage has passed.</li>
+    <li><b>Signed, not hidden.</b> A signature proves who sent a record and that no byte changed; it does not hide the record. Confidentiality on the wire is the TLS you already run in front.</li>
   </ul>
 
   <h3>Roll-out</h3>
@@ -335,6 +355,8 @@
     <dt>“Our partners don’t sign records.”</dt><dd>They need a signing adapter at their end. That is what makes verify-before-parse possible: there is nothing to verify in an unsigned record.</dd>
     <dt>“A partner’s key is stolen.”</dt><dd>The sentinel watches verified behaviour; in the battery a stolen feed key posting credit without end is blocked at record 5. Rotate the key and the node stops trusting the old one.</dd>
     <dt>“What if the gate has a hole?”</dt><dd>The referee is written separately from the gate and checks every admitted message. A breach becomes an antibody at once, is pushed to every pinned peer, and mints a signed rune; the record of it is the fix’s test.</dd>
+    <dt>“How does a partner reach a node on loopback?”</dt><dd>Through what already carries the feed to you. Your TLS endpoint, VPN or file drop runs on the same machine and passes each record to the node. The node never needs a port on the network, so it adds nothing to your attack surface there.</dd>
+    <dt>“A partner sends a record wrongly by mistake.”</dt><dd>It is refused with its stage and reason, written to the journal, and the partner resends it correctly with the next counter. Mistakes cost a partner nothing: the rebound starts only after 100 refusals.</dd>
     <dt>“High availability?”</dt><dd>One node writes one ledger, under a lock. For capacity or a second site, run more nodes, each with its own ledger, pinned to each other.</dd>
   </dl>
 
@@ -365,7 +387,7 @@
     <p>It is not a general web firewall: it guards one exact wire format, and a partner writes that format through an adapter. It is not a replacement for keeping private keys safe: the holder of a sender’s key is that sender, which is why the sentinel watches verified behaviour. One node writes one ledger.</p></details>
   <details><summary>8 · References</summary>
     <ul>
-      <li>Gary W. Floyd, Lumiea Systems Research Division, ThunderStruck Service, LLC: the GEP ladder the sentinel uses, published as Open Defensive Prior Art under Creative Commons.</li>
+      <li>Gary W. Floyd, Lumiea Systems Research Division, ThunderStruck Service, LLC, “GEP-Based Security: Behavioral Entropy Signatures for Cybersecurity and DevOps” (2025): the GEP ladder the sentinel uses, published as Open Defensive Prior Art under Creative Commons.</li>
       <li>I.-C. Yeh and C.-H. Lien, “The comparisons of data mining techniques for the predictive accuracy of probability of default of credit card clients”, Expert Systems with Applications 36(2), 2009. Dataset: UCI Machine Learning Repository, DOI 10.24432/C55S3H, CC BY 4.0.</li>
       <li>RFC 8032, Edwards-Curve Digital Signature Algorithm (EdDSA).</li>
       <li>The list prices and statistics in the cost case, each linked with the date it was read.</li>
@@ -381,14 +403,14 @@
     <dt>What does it cost to run compared with AWS WAF and API Gateway?</dt><dd>break-it is MIT-licensed with no licence fee; the running cost is the machine and its electricity. The page's cost case uses your own volumes with dated list prices: at AWS's own worked example of one web ACL, 19 rules and 10 million requests a month, WAF is $30.00 and a REST API Gateway adds $35.00, while one node drawing the laptop chip's 55 W maximum all month costs £10.57 at the Ofgem cap for October to December 2026.</dd>
     <dt>What counts as breaking it?</dt><dd>The referee decides, and it is written independently of the gate. You win if the app acts on a message the gate never admitted, if the gate admits a packet an independent grammar rejects, if an action does not match its ledger entry, or if the app's state stops being a replay of the ledger. A win mints a signed Breaker's Rune.</dd>
     <dt>Who supplies and supports it?</dt><dd>AI Native Solutions (ai-nativesolutions.com). The software is MIT-licensed and keeps running without us. Support, service levels, warranty and liability are agreed per deployment, in each deployment's agreement.</dd>
-    <dt>Whose work does it build on?</dt><dd>The sentinel's behaviour ladder is Gary W. Floyd's GEP ladder (Lumiea Systems Research Division, ThunderStruck Service, LLC), published as Open Defensive Prior Art under Creative Commons. The product is powered by the Konomi architecture, created by Thomas Frumkin, used with his permission. The pilot's feed is the UCI Default of Credit Card Clients dataset by I.-C. Yeh and C.-H. Lien, CC BY 4.0.</dd>
+    <dt>Whose work does it build on?</dt><dd>The sentinel's behaviour ladder is Gary W. Floyd's GEP ladder (Lumiea Systems Research Division, ThunderStruck Service, LLC; “GEP-Based Security: Behavioral Entropy Signatures for Cybersecurity and DevOps”, 2025), published as Open Defensive Prior Art under Creative Commons. The product is powered by the Konomi architecture, created by Thomas Frumkin, used with his permission. The pilot's feed is the UCI Default of Credit Card Clients dataset by I.-C. Yeh and C.-H. Lien, CC BY 4.0.</dd>
   </dl>
 </section>
 </main>
 
 <footer><div class="wrap">
   <p>BREAK IT · MIT · <a href="https://github.com/sjgant80-hub/break-it">source, attack kit and receipts</a> · supplied by <a href="https://www.ai-nativesolutions.com">AI Native Solutions</a></p>
-  <p>Powered by the Konomi architecture, created by Thomas Frumkin. The sentinel’s ladder: Gary W. Floyd, Lumiea Systems Research Division, ThunderStruck Service, LLC (Open Defensive Prior Art, Creative Commons). The pilot’s feed: UCI Default of Credit Card Clients, I.-C. Yeh and C.-H. Lien, DOI 10.24432/C55S3H, CC BY 4.0.</p>
+  <p>Powered by the Konomi architecture, created by Thomas Frumkin. The sentinel’s ladder: Gary W. Floyd, Lumiea Systems Research Division, ThunderStruck Service, LLC, “GEP-Based Security: Behavioral Entropy Signatures for Cybersecurity and DevOps” (2025), Open Defensive Prior Art under Creative Commons. The pilot’s feed: UCI Default of Credit Card Clients, I.-C. Yeh and C.-H. Lien, DOI 10.24432/C55S3H, CC BY 4.0.</p>
   <p>This page runs the repository’s kernels in your browser and requests only its own files. Nothing you type or send here leaves this tab.</p>
 </div></footer>
 <script type="module" src="page/app.mjs"></script>

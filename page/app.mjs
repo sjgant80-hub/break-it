@@ -362,6 +362,11 @@ function cost() {
       ['Nodes the measured rate needs for this volume', n0(r.node.nodes)], ['Their electricity at the Ofgem cap', gbp(r.node.electricityPence)], ['Machines you buy, spread over their life', gbp(r.node.machinePence)],
       ['Staff time the journal takes off your people', gbp(r.staffPence)], ['Licence', 'MIT, no licence fee']]
       .map(([k, v]) => '<div class="line"><span>' + esc(k) + '</span><span>' + esc(v) + '</span></div>').join('');
+  $('c-scale').innerHTML = [10000000, 100000000, 1000000000, 5000000000].map((requests) => {
+    const s = costCase({ ...inputs, requests }, prices);
+    return s.ok ? '<tr><td class="mono">' + esc(n0(requests)) + '</td><td class="mono">' + esc(usd(s.managed.totalCents)) + '</td><td class="mono">' + esc(n0(s.node.nodes)) + '</td><td class="mono">' + esc(gbp(s.node.totalPence)) + '</td><td class="mono">' + esc(gbp(s.yearlyPence)) + '</td></tr>'
+      : '<tr><td class="mono">' + esc(n0(requests)) + '</td><td colspan="4" class="no">' + esc(s.why) + '</td></tr>';
+  }).join('');
 }
 for (const id of ['c-req', 'c-acl', 'c-rules', 'c-api', 'c-rate', 'c-watts', 'c-hours', 'c-fx', 'c-machine', 'c-life', 'c-staffh', 'c-staffr', 'c-share']) $(id).addEventListener('input', cost);
 

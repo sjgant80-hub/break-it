@@ -1,14 +1,52 @@
-# BREAK IT
+# BREAK IT · the Liveware ingest gateway
 
-### ▶ Live arena: **https://sjgant80-hub.github.io/break-it/**
+### ▶ Live: **https://sjgant80-hub.github.io/break-it/**
 
-A white-box **verify-before-parse gate** with a living immune system and a cost law.
-Everything is in front of you — the gate, a naive app behind it, the ledger, and a full
-attack kit. **Reach the app with anything malicious and you win.** A referee decides, in
-code written independently of the gate, and the win drops a signed, re-runnable trophy.
+A secure ingest gateway for the records you take in from partners and devices. It proves
+**who sent each record, in what order, in exactly what shape**, on the raw bytes, **before any
+software parses it**. Every refusal becomes an antibody, a repeat attacker pays proof-of-work
+for every new look, an independent referee watches the naive app behind it, and the whole
+thing runs on a machine you own and sends nothing out. White-box: **reach the app with
+anything malicious and you win.**
 
-The live page runs the **exact same kernel** the tests and CI run — the gate you attack
-in the browser is the gate that is gated below. Nothing is a mock.
+The live page runs the repository's own gated kernels in your browser: the real feed (180,000
+payment records), the real gate, immune system, sentinel, app and referee. Nothing is a mock.
+
+## The Liveware Pilot: sealed first, measured second, failures kept
+
+One real node (`startNode`, as `node run.mjs` runs it) as the ingest gateway for a partner's
+payment feed: the 180,000 records of the UCI *Default of Credit Card Clients* dataset
+(DOI 10.24432/C55S3H, CC BY 4.0), with six known attack shapes injected mid-feed. The claims
+were committed (`pilot/claims.json` @ c75c903) before the measuring code existed;
+`pilot/measure.mjs` refuses to run if a claims file differs from its seal.
+
+| role | claim | measured | |
+|---|---|---|---|
+| COO | every record admitted, none refused or lost | 180,000 admitted, 180,000 in the ledger, 0 refused | HELD |
+| COO | the books equal the feed exactly | equal on all 210,000 keys, 30,000 accounts | HELD |
+| COO | ≥ 100 records/s, each signature-checked and fsync'd first | 194.6 records/s (925 s), Intel i7-1255U laptop | HELD |
+| CISO | 0 outbound attempts of any kind (as sealed, DNS included) | 1: Node's own `dns.lookup('127.0.0.1')` for its bind address | **FAILED, kept** |
+| CISO | listens on 127.0.0.1 only | 127.0.0.1 | HELD |
+| CISO | 0 outbound attempts once listening (addendum, sealed before the full run) | 0 | HELD |
+| Security | six attack shapes refused at the gate, then dropped on sight | replay → counter; flip, unpinned key, no domain → signature; truncated → size; out-of-range → schema; all six then recognised | HELD |
+| Security | the referee finds 0 breaches; its fold matches | 0 breaches, 180,000 checked, fold matches | HELD |
+| Security | the red-team battery reproduces its receipt | 79 cases, all held | HELD |
+| Regulator | every refusal explained; the ledger re-derivable offline | 12/12 answers and 12/12 journal records explained; the chain verifies; head = the offline derivation | HELD |
+
+Receipt: [`receipts/pilot.json`](receipts/pilot.json), including the attempts that went wrong
+on the way. CI runs `node pilot/check.mjs`: the ledger head and the books re-derived from the
+feed alone, the judge re-run on the receipt's facts, and a metered real node re-run on the
+first 3,000 records. The CFO's case is arithmetic on dated list prices and your own volumes
+(`src/cost.mjs`, gated; prices in [`costs/sources.json`](costs/sources.json)), run on the page.
+
+```bash
+node pilot/measure.mjs     # the whole pilot on your own machine: your rate, your egress meter, your books
+node pilot/check.mjs       # what CI checks
+node tools/serve.mjs       # the live page locally, http://127.0.0.1:8892
+```
+
+Supplied by [AI Native Solutions](https://www.ai-nativesolutions.com). MIT, no licence fee.
+Powered by the Konomi architecture, created by Thomas Frumkin.
 
 ---
 
@@ -96,7 +134,7 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
 ## Proof it holds (and how you'd know if it didn't)
 
 - **`node attack-kit/redteam.mjs`** — our own battery across every vector in the brief
-  (forge / replay-race / malleability / truncation / extension / length-extension /
+  (79 cases: forge / replay-race / malleability / truncation / extension / length-extension /
   schema-escape / parser-reach / DoS / ledger tamper-delete-reorder / torn-tail /
   double-open / mesh-poisoning / Sentinel abuse / the rebound law). It writes
   `receipts/redteam.json`, and **`--check` regenerates it and demands it be byte-identical**.
@@ -105,7 +143,7 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   flips one operator at a time and fails unless a test catches it; a surviving mutant is a
   line no test actually tests. CI runs it. Any reviewed-equivalent survivor is listed, with
   a written reason, in `witness.baseline.json`.
-- **`node --test test/`** — the unit + hostile-input (never-throw) suites.
+- **`node --test test/*.test.mjs`** — the unit + hostile-input (never-throw) suites, the pilot judge's tests, and the live page's own gate (self-only CSP, every control wired, the FAQ equal to its schema, the credits).
 
 CI green on GitHub's runner is the un-forgeable proof of the code; the **live arena** is
 the un-forgeable proof it's usable. Found something? Write it up in
@@ -114,10 +152,13 @@ the un-forgeable proof it's usable. Found something? Write it up in
 ## Layout
 
 ```
-src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client
+src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost
+pilot/      claims (sealed) · measure · check · judge · the egress meter · the metered node
+page/       the live page: app.mjs (the kernels, in the browser) · style.css
+feeds/      the UCI feed + SOURCES.json        costs/  the dated list prices the cost case reads
 attack-kit/ forge · replay · fuzz · redteam  (+ lib)   — none of it trusted by the node
 test/       one suite per kernel + a shared hostile-input battery
-receipts/   redteam.json  — the re-runnable receipt CI must reproduce
+receipts/   redteam.json · pilot.json · witness.json — the re-runnable receipts CI checks
 run.mjs     one command stands it up
 ```
 

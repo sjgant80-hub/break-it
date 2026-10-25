@@ -1,0 +1,113 @@
+{
+ "kind": "break-it.witness",
+ "v": 1,
+ "clean": true,
+ "killed": 490,
+ "total": 525,
+ "kernels": [
+  {
+   "src": "src/wire.mjs",
+   "killed": 81,
+   "total": 84,
+   "ignored": 3,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/gate.mjs",
+   "killed": 11,
+   "total": 11,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/sentinel.mjs",
+   "killed": 33,
+   "total": 37,
+   "ignored": 4,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/immune.mjs",
+   "killed": 49,
+   "total": 53,
+   "ignored": 4,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/antibody.mjs",
+   "killed": 65,
+   "total": 74,
+   "ignored": 9,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/chain.mjs",
+   "killed": 17,
+   "total": 17,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/rebound.mjs",
+   "killed": 25,
+   "total": 37,
+   "ignored": 12,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/referee.mjs",
+   "killed": 55,
+   "total": 57,
+   "ignored": 2,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/app.mjs",
+   "killed": 6,
+   "total": 6,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/loot.mjs",
+   "killed": 17,
+   "total": 18,
+   "ignored": 1,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/cost.mjs",
+   "killed": 37,
+   "total": 37,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/feed.mjs",
+   "killed": 23,
+   "total": 23,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "pilot/judge.mjs",
+   "killed": 71,
+   "total": 71,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  }
+ ]
+}
