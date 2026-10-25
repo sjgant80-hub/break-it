@@ -1,0 +1,55 @@
+{
+  "kind": "break-it.pilot.claims",
+  "v": 1,
+  "sealed": "Written and committed before the measurement code existed and before the pilot ran. pilot/measure.mjs refuses to run if this file differs from its commit, and the receipt names the commit. A claim that fails is kept as failed.",
+  "pilot": "The Liveware Pilot: one real break-it node, as `node run.mjs` starts it, used as the secure ingest gateway for a partner's payment feed, measured end to end on the laptop that built it (Intel Core i7-1255U, Windows 11).",
+  "feed": { "path": "feeds/credit-default.csv", "sha256": "4edce6da569b2c30788a85fd98a9bafb1a983e8ca1a7aac875dd7ff853cbd0bb", "records": 180000, "accounts": 30000 },
+  "claims": [
+    {
+      "id": "coo-1", "role": "COO",
+      "claim": "A real node admits all 180,000 payment records of the feed, in order. Not one genuine record is refused or lost.",
+      "measure": "the node's own count of admitted packets is 180,000; the ledger holds 180,000 entries; no genuine record got a refusal (a 429 rate-limit answer, if any, is retried and counted separately)"
+    },
+    {
+      "id": "coo-2", "role": "COO",
+      "claim": "The books equal the feed exactly: for every one of the 30,000 accounts the posted balance is the sum of its six payments, and every account-month holds its own amount.",
+      "measure": "the node's /state compared key by key with the sums the feed kernel computes from the CSV alone"
+    },
+    {
+      "id": "coo-3", "role": "COO",
+      "claim": "The node sustains at least 100 records a second over the whole feed on this laptop, with every record's signature checked and the record written to disk (fsync) before the app sees it.",
+      "measure": "180,000 divided by the wall-clock seconds from the first record sent to the last answer received"
+    },
+    {
+      "id": "ciso-1", "role": "CISO",
+      "claim": "The node process opens no outbound connection during the whole run: 0 TCP or TLS connects, 0 UDP sockets, 0 DNS lookups, 0 fetches.",
+      "measure": "hooks on net, tls, dgram, dns and fetch loaded into the node process before the node starts, read out at the end"
+    },
+    {
+      "id": "ciso-2", "role": "CISO",
+      "claim": "The node listens on 127.0.0.1 only.",
+      "measure": "the address the node's server reports it is bound to"
+    },
+    {
+      "id": "sec-1", "role": "Security",
+      "claim": "Six known attack shapes injected mid-feed are each refused at the gate the first time and dropped on sight by an antibody the second time, and the feed around them is untouched: a replayed record, a record with one byte flipped, a record signed by a key that is not pinned, a record signed without the domain prefix, a truncated record, and an out-of-range record signed with the genuine key.",
+      "measure": "the node's answer to each injection, sent twice, byte for byte the same"
+    },
+    {
+      "id": "sec-2", "role": "Security",
+      "claim": "The independent referee finds 0 breaches, and its fold of the ledger matches the app's state.",
+      "measure": "the node's /referee at the end of the run"
+    },
+    {
+      "id": "sec-3", "role": "Security",
+      "claim": "The white-box red-team battery re-runs and reproduces its committed receipt byte for byte: 79 cases, every one held.",
+      "measure": "node attack-kit/redteam.mjs --check"
+    },
+    {
+      "id": "reg-1", "role": "Regulator",
+      "claim": "Every refusal the node makes carries a named stage and a plain-words reason, both in its HTTP answer and in its hash-chained journal; the ledger's hash chain verifies end to end, and its head can be re-derived offline from the feed alone.",
+      "measure": "every refusal answer and journal record checked for a stage from the gate's list and a reason in words; the ledger file re-loaded and its chain checked; its head compared with an offline derivation that signs the same 180,000 records without a node"
+    }
+  ],
+  "computed_not_claimed": "The CFO's cost case is arithmetic on sourced, dated list prices and the buyer's own figures (src/cost.mjs, gated), not a prediction, so it is not sealed here. Its one measured input, the records a second a node sustains, comes from claim coo-3."
+}
