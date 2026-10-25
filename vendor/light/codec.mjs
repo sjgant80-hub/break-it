@@ -188,7 +188,7 @@ export function encode(bytes, primed, opts) {
         const mid = x1 + (r >>> 12) * q + (((r & 4095) * q) >>> 12);
         if (y) x2 = mid; else x1 = mid + 1;
         w.learn(y, q);
-        while (((x1 ^ x2) & 0xff000000) === 0) { out.push(x2 >>> 24); x1 = (x1 << 8) >>> 0; x2 = ((x2 << 8) | 255) >>> 0; }
+        for (let g = 0; g < 32 && ((x1 ^ x2) & 0xff000000) === 0; g++) { out.push(x2 >>> 24); x1 = (x1 << 8) >>> 0; x2 = ((x2 << 8) | 255) >>> 0; }   // the cap (max valid renorm is 2) only bounds a runaway, so no kernel can hang
       }
     }
   } finally { if (run.log) giveBack(primed, run.log); }
@@ -226,7 +226,7 @@ export function decode(light, primed, opts) {
         if (y) x2 = mid; else x1 = mid + 1;
         w.learn(y, q);
         c = (c << 1) | y;
-        while (((x1 ^ x2) & 0xff000000) === 0) { x1 = (x1 << 8) >>> 0; x2 = ((x2 << 8) | 255) >>> 0; x = ((x << 8) | (light[at++] | 0)) >>> 0; }
+        for (let g = 0; g < 32 && ((x1 ^ x2) & 0xff000000) === 0; g++) { x1 = (x1 << 8) >>> 0; x2 = ((x2 << 8) | 255) >>> 0; x = ((x << 8) | (light[at++] | 0)) >>> 0; }   // same cap as encode, so the two stay in step
       }
       out[i] = c;
     }
