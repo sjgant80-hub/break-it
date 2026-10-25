@@ -7,6 +7,9 @@
 //
 //   drain        — the cumulative |ADD delta| over the sender's last WINDOW packets stays under DRAIN_CAP
 //                  (per-packet caps alone let twenty small drains add up — SENTINEL's flag 2, learned in v2)
+//   inflation    — the cumulative REC amount over its last WINDOW packets stays under POST_CAP: an ingest feed's key in
+//                  the wrong hands cannot post unbounded credit (the mirror of drain). The cap is the operator's: here
+//                  set from the pilot feed's own history (about twice its largest 64-record window), and said so.
 //   destruction  — at most DEL_CAP deletes in its last HALF packets
 //   deviation    — once calibrated, the op mix of its last HALF packets is compared with its OWN baseline (one-class:
 //                  it models the sender, not the attacker, so an attack it never saw still deviates). L1 distance in
@@ -21,18 +24,19 @@
 import { OPS } from './wire.mjs';
 
 export const WINDOW = 64, HALF = 32, CALIBRATE = 64;
-export const DRAIN_CAP = 50000000, DEL_CAP = 16;
+export const DRAIN_CAP = 50000000, DEL_CAP = 16, POST_CAP = 10000000;
 export const DEVIATION = Object.freeze({ THROTTLE: 400, STEP_UP: 600, BLOCK: 800 });
 
 export const freshState = () => ({ total: 0, baseline: null, recent: [], blocked: false });
 
-const opIndex = (op) => (op === OPS.SET ? 0 : op === OPS.DEL ? 1 : op === OPS.ADD ? 2 : -1);
+const opIndex = (op) => (op === OPS.SET ? 0 : op === OPS.DEL ? 1 : op === OPS.ADD ? 2 : op === OPS.REC ? 3 : -1);
 function permille(ops) {
-  const c = [0, 0, 0];
+  const c = [0, 0, 0, 0];
   for (const o of ops) { const i = opIndex(o); if (i >= 0) c[i]++; }
-  return ops.length ? c.map((x) => Math.floor((x * 1000) / ops.length)) : [0, 0, 0];
+  return ops.length ? c.map((x) => Math.floor((x * 1000) / ops.length)) : [0, 0, 0, 0];
 }
-const l1 = (a, b) => Math.abs(a[0] - b[0]) + Math.abs(a[1] - b[1]) + Math.abs(a[2] - b[2]);
+// a baseline from before records existed has three parts: its missing fourth is no records at all
+const l1 = (a, b) => [0, 1, 2, 3].reduce((t, i) => t + Math.abs((a[i] || 0) - (b[i] || 0)), 0);
 
 /** The L1 distance (permille) between a sender's recent op mix and its baseline mix. */
 export const deviation = (recentOps, baseline) => (Array.isArray(baseline) && Array.isArray(recentOps) && recentOps.length ? l1(permille(recentOps), baseline) : 0);
@@ -48,11 +52,15 @@ export function judge(state, msg) {
     const op = m.op;
     if (opIndex(op) < 0) return { allow: false, level: 'BLOCK', reason: 'not an op this store knows', state: s };
     if (s.blocked === true) return { allow: false, level: 'BLOCK', reason: 'this sender is blocked until its operator resets it', state: s };
-    const entry = { op, delta: op === OPS.ADD && Number.isInteger(m.delta) ? m.delta : 0 };
+    const entry = { op, delta: op === OPS.ADD && Number.isInteger(m.delta) ? m.delta : 0, amount: op === OPS.REC && Number.isInteger(m.amount) ? m.amount : 0 };
     const after = [...s.recent, entry].slice(-WINDOW);
     const drained = after.reduce((t, e) => t + Math.abs(e.delta), 0);
     if (drained > DRAIN_CAP) {
       return { allow: false, level: 'BLOCK', reason: 'drain — ' + drained + ' moved in ' + after.length + ' packets is over ' + DRAIN_CAP, state: { ...s, blocked: true } };
+    }
+    const posted = after.reduce((t, e) => t + (e.amount || 0), 0);
+    if (posted > POST_CAP) {
+      return { allow: false, level: 'BLOCK', reason: 'inflation — ' + posted + ' posted in ' + after.length + ' packets is over ' + POST_CAP, state: { ...s, blocked: true } };
     }
     const half = after.slice(-HALF).map((e) => e.op);
     const dels = half.filter((o) => o === OPS.DEL).length;

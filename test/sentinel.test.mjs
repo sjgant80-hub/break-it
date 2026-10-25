@@ -42,7 +42,7 @@ test('destruction: more than DEL_CAP deletes in the window is STEP-UP, not admit
 test('deviation: once calibrated, an op-mix far from the baseline blocks', () => {
   const calibrate = Array.from({ length: CALIBRATE }, () => ({ op: OPS.SET, key: 'k', value: 'v' }));  // baseline all-SET
   const stBase = run(calibrate);
-  assert.deepEqual(stBase.baseline, [1000, 0, 0]);
+  assert.deepEqual(stBase.baseline, [1000, 0, 0, 0]);   // set · del · add · rec
   const flip = Array.from({ length: HALF + 4 }, () => ({ op: OPS.ADD, key: 'k', delta: 1 }));          // now all-ADD
   let st = stBase, blocked = null;
   for (const m of flip) { const r = judge(st, m); st = r.state; if (!r.allow) { blocked = r; break; } }   // the judgment that blocks
@@ -119,7 +119,7 @@ test('STEP-UP gates deletes only — a SET from the same sender right after is s
 test('the baseline is captured at CALIBRATE from the whole window, not on the first packet', () => {
   let st = judge(freshState(), { op: OPS.ADD, key: 'k', delta: 1 }).state;        // first packet ADD
   for (let i = 0; i < CALIBRATE - 1; i++) st = judge(st, { op: OPS.SET, key: 'k', value: 'v' }).state;
-  assert.deepEqual(st.baseline, [Math.floor((CALIBRATE - 1) * 1000 / CALIBRATE), 0, Math.floor(1000 / CALIBRATE)]);
+  assert.deepEqual(st.baseline, [Math.floor((CALIBRATE - 1) * 1000 / CALIBRATE), 0, Math.floor(1000 / CALIBRATE), 0]);
 });
 
 test('judge returns the reason that matches the verdict (ALLOW baseline vs unknown op)', () => {

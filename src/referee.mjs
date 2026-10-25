@@ -16,6 +16,7 @@ import { parse } from './wire.mjs';
 const KEY = /^(?:6[1-9a-f]|7[0-9a])(?:6[1-9a-f]|7[0-9a]|3[0-9]|5f){0,31}$/;    // [a-z][a-z0-9_]{0,31}, as hex
 const PRINTS = /^(?:2[0-9a-f]|[3-6][0-9a-f]|7[0-9a-e])*$/;                      // 0x20..0x7e, as hex
 const FRAME = /^42524b3101[0-9a-f]{2}([0-9a-f]{16})([0-9a-f]{4})([0-9a-f]*)([0-9a-f]{128})$/;
+const RECORD = /^05([0-9a-f]{8})([0-9a-f]{4})([0-9a-f]{8})$/;                    // op · account · period · amount, as hex
 // bytes → lowercase hex, with NO Node Buffer — so this kernel runs unchanged in a browser (the live arena is the gated code)
 const toHex = (u8) => { let s = ''; for (let i = 0; i < u8.length; i++) s += u8[i].toString(16).padStart(2, '0'); return s; };
 
@@ -30,6 +31,11 @@ export function grammarOk(bytes) {
     const [, counter, nHex, body] = m;
     const n = parseInt(nHex, 16);
     if (/^0+$/.test(counter) || n < 3 || n > 256 || body.length !== n * 2) return false;
+    const rec = RECORD.exec(body);
+    if (rec) {
+      const account = parseInt(rec[1], 16), period = parseInt(rec[2], 16), amount = parseInt(rec[3], 16);
+      return account >= 1 && account <= 99999999 && period <= 1199 && amount <= 100000000;
+    }
     const op = body.slice(0, 2), k = parseInt(body.slice(2, 4), 16), key = body.slice(4, 4 + 2 * k), rest = body.slice(4 + 2 * k);
     if (key.length !== 2 * k || !KEY.test(key)) return false;
     if (op === '01') { const v = parseInt(rest.slice(0, 2), 16); return rest.length >= 2 && v <= 200 && rest.length === 2 + 2 * v && PRINTS.test(rest.slice(2)); }
@@ -39,7 +45,8 @@ export function grammarOk(bytes) {
   } catch { return false; }
 }
 
-const same = (a, b) => a && b && a.sender === b.sender && a.counter === b.counter && a.op === b.op && a.key === b.key && a.value === b.value && a.delta === b.delta;
+const same = (a, b) => a && b && a.sender === b.sender && a.counter === b.counter && a.op === b.op && a.key === b.key && a.value === b.value && a.delta === b.delta
+  && a.account === b.account && a.period === b.period && a.amount === b.amount;
 
 export function makeReferee() {
   const breaches = [];

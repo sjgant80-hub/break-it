@@ -1,0 +1,17 @@
+{
+ "kind": "break-it.feeds",
+ "v": 1,
+ "why": "The Liveware Pilot's ingest feed: real records from a public dataset, checked by hash before a byte of them is used.",
+ "files": [
+  {
+   "path": "feeds/credit-default.csv",
+   "sha256": "4edce6da569b2c30788a85fd98a9bafb1a983e8ca1a7aac875dd7ff853cbd0bb",
+   "from": "https://archive.ics.uci.edu/static/public/350/default+of+credit+card+clients.zip → default of credit card clients.xls (zip sha256 56c885f84457f6680f8438f02bfcdac9579323d8a94465ee5f26e32baa727602, xls sha256 30c6be3abd8dcfd3e6096c828bad8c2f011238620f5369220bd60cfc82700933) → plain CSV, as sjgant80-hub/kardlings derives it (tools/convert-credit.mjs, re-derived byte for byte in its CI)",
+   "dataset": "Default of Credit Card Clients, UCI Machine Learning Repository, DOI 10.24432/C55S3H",
+   "licence": "CC BY 4.0",
+   "cite": "I.-C. Yeh and C.-H. Lien. The comparisons of data mining techniques for the predictive accuracy of probability of default of credit card clients. Expert Systems with Applications 36(2) (2009), doi:10.1016/j.eswa.2007.12.020",
+   "rows": 30000,
+   "used": "ID and PAY_AMT1..PAY_AMT6 only: the amount each of 30,000 clients paid in each month from April to September 2005 (NT dollars) — 180,000 payment records, the partner feed the gateway ingests. No other column is read."
+  }
+ ]
+}

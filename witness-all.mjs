@@ -30,14 +30,15 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 // each kernel's own unit test, plus the shared hostile-input battery (fuzz.test.mjs) — the latter kills the
 // defensive type-guard mutants (x && typeof x === 'object' → ||) by proving the function stays total on junk.
 export const PAIRS = [
-  ['src/wire.mjs', ['test/wire.test.mjs', 'test/fuzz.test.mjs']],
+  ['src/wire.mjs', ['test/wire.test.mjs', 'test/ingest.test.mjs', 'test/fuzz.test.mjs']],
   ['src/gate.mjs', ['test/gate.test.mjs', 'test/fuzz.test.mjs']],
-  ['src/sentinel.mjs', ['test/sentinel.test.mjs', 'test/fuzz.test.mjs']],
+  ['src/sentinel.mjs', ['test/sentinel.test.mjs', 'test/ingest.test.mjs', 'test/fuzz.test.mjs']],
   ['src/immune.mjs', ['test/immune.test.mjs', 'test/fuzz.test.mjs']],
   ['src/antibody.mjs', ['test/antibody.test.mjs', 'test/fuzz.test.mjs']],
   ['src/chain.mjs', ['test/chain.test.mjs', 'test/fuzz.test.mjs']],
   ['src/rebound.mjs', ['test/rebound.test.mjs', 'test/fuzz.test.mjs']],
-  ['src/referee.mjs', ['test/referee.test.mjs', 'test/fuzz.test.mjs']],
+  ['src/referee.mjs', ['test/referee.test.mjs', 'test/ingest.test.mjs', 'test/fuzz.test.mjs']],
+  ['src/app.mjs', ['test/ingest.test.mjs', 'test/referee.test.mjs']],
   ['src/loot.mjs', ['test/loot.test.mjs', 'test/fuzz.test.mjs']],
 ];
 

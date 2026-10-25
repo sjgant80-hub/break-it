@@ -16,7 +16,8 @@ import { makeClient } from '../src/client.mjs';
 import { decide } from '../src/gate.mjs';
 import { GENESIS, entryFor } from '../src/chain.mjs';
 import { sha256hex } from '../src/ledger.mjs';
-import { OPS, DOMAIN } from '../src/wire.mjs';
+import { OPS, DOMAIN, MAX_ACCOUNT, MAX_AMOUNT } from '../src/wire.mjs';
+import { POST_CAP } from '../src/sentinel.mjs';
 import { solve, verifyWork, difficultyFor, BITS, obeys, ratchetHolds, elasticHolds, released } from '../src/rebound.mjs';
 import { rawPacket, signRaw, post, rawHttp, toHex, message } from './lib.mjs';
 
@@ -140,6 +141,22 @@ export async function run() {
     ['a non-ASCII key byte', [1, 2, 0x61, 0xc3, 1, 0x78]],
   ];
   for (const [name, payload] of escapes) { const st = decide(legitRaw(payload), ctxAt(9n)).stage; add('schema', name, 'signed by the LEGITIMATE key', st, st === 'schema' || st === 'size'); }
+  // ── INGEST: a record is three integers — nothing else gets in, not even under the legitimate key ───────────────
+  const be = (v, n) => Array.from({ length: n }, (_, i) => (v / 2 ** (8 * (n - 1 - i))) & 0xff);
+  const rec = (account, period, amount) => [OPS.REC, ...be(account, 4), ...be(period, 2), ...be(amount, 4)];
+  const recordEscapes = [
+    ['a record for account 0', rec(0, 63, 100)],
+    ['a record for an account past the limit', rec(MAX_ACCOUNT + 1, 63, 100)],
+    ['a record whose account has its top bit set (negative, if read signed)', rec(0x80000001, 63, 100)],
+    ['a record for a month after December 2099', rec(1, 1200, 100)],
+    ['a record for an amount past the limit', rec(1, 63, MAX_AMOUNT + 1)],
+    ['a record for 0xffffffff (−1, if read signed)', rec(1, 63, 0xffffffff)],
+    ['a record one byte short', rec(1, 63, 100).slice(0, 10)],
+    ['a record with a byte left over', [...rec(1, 63, 100), 0]],
+    ['SQL injected where a record goes', [OPS.REC, ...str("1;DROP TABLE accounts;--")]],
+    ['a script injected where a record goes', [OPS.REC, ...str('<script>alert(1)</script>')]],
+  ];
+  for (const [name, payload] of recordEscapes) { const st = decide(legitRaw(payload), ctxAt(9n)).stage; add('ingest', name, 'signed by the LEGITIMATE feed key', st, st === 'schema' || st === 'size'); }
   const lie = signRaw(rawPacket({ sender: 1, counter: 10n, payload: [1, 1, 0x61, 1, 0x61], declaredLength: 4 }), S1);
   add('schema', 'a length field that lies', 'payload 5 bytes, header says 4', decide(lie, ctxAt(9n)).stage, !decide(lie, ctxAt(9n)).admit);
 
@@ -276,6 +293,21 @@ export async function run() {
   const jh = await (await fetch(jt.url + '/health')).json();
   await jt.close();
   add('state', 'the attack journal edited', 'one record\'s "novel" flag flipped', jh.journal === 0 && jh.ledger === lines.length ? 'journal moved aside, ledger untouched (' + jh.ledger + ' entries)' : 'journal trusted', jh.journal === 0 && jh.ledger === lines.length);
+
+  // ── INGEST: a fresh gateway takes a real feed, then the feed's key is stolen ─────────────────────────────────
+  const ing = await startNode({ port: 0, ledgerPath: join(dir, 'ing', 'ledger.jsonl'), journalPath: join(dir, 'ing', 'journal.jsonl'), lootPath: join(dir, 'ing', 'loot.jsonl'), pubkeys, nodeKey: nodeKeys[0], peers: [] });
+  const feed = makeClient({ privateKey: S1, sender: 1 });
+  let posted = 0, want = 0;
+  for (let i = 0; i < 50; i++) { const amount = (i * 7919) % 50000; want += amount; if (stageOf(await post(ing.url, feed.next({ op: OPS.REC, account: 1 + (i % 10), period: 63 + (i % 6), amount }))) === 'ACCEPTED') posted++; }
+  const state = await (await fetch(ing.url + '/state')).json(), st = state.state || state;
+  const total = Object.entries(st).filter(([k]) => /^A[0-9]+$/.test(k)).reduce((s, [, v]) => s + v, 0);
+  add('ingest', 'a genuine feed of 50 records', 'signed records for 10 accounts over 6 months', posted + ' of 50 posted, balances sum to ' + total, posted === 50 && total === want);
+  let stolenStage = null, stolenAt = 0;
+  for (let i = 0; i < 20; i++) { const r = stageOf(await post(ing.url, feed.next({ op: OPS.REC, account: 7, period: 68, amount: 2000000 }))); if (r !== 'ACCEPTED') { stolenStage = r; stolenAt = i; break; } }
+  add('ingest', 'the feed key stolen, posting credit without end', '20 × a 2,000,000 record with the genuine key', stolenStage ? stolenStage + ' at record ' + (stolenAt + 1) + ' (cap ' + POST_CAP + ' a window)' : 'never stopped', stolenStage === 'behavior');
+  const ingRef = await (await fetch(ing.url + '/referee')).json();
+  await ing.close();
+  add('ingest', 'did any record reach the app it should not have?', 'the ingest node’s referee, after the feed and the theft', ingRef.breached ? 'BREACHED' : 'clean — ' + ingRef.checked + ' messages checked, state = ledger replay: ' + ingRef.foldMatches, !ingRef.breached && ingRef.foldMatches === true);
 
   // ── THE REFEREE ───────────────────────────────────────────────────────────────────────────────────────────
   add('referee', 'did anything reach the app it should not have?', 'every admitted message checked against the gate, the ledger and an independent grammar; the whole state re-folded from the ledger', referee.breached ? 'BREACHED' : 'clean — ' + referee.checked + ' messages checked, state = ledger replay: ' + referee.foldMatches, !referee.breached && referee.foldMatches === true);
