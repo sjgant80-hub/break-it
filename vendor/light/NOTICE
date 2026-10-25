@@ -1,0 +1,4 @@
+LIGHT — the estate's inner codec. Created in the Konomi frame.
+Powered by the Konomi architecture, created by Thomas Frumkin, used with his permission.
+Source: sjgant80-hub/konomi-tongue, light/. Vendored read-only into break-it; src/share.mjs
+pins the SHA-256 of each file in SOURCE.json so a drift is caught by the tests. MIT.

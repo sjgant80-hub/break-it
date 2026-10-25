@@ -131,6 +131,16 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   a time. On start every packet is re-run through the gate, so the ledger can only ever
   hold packets the gate would admit; a single altered byte refuses the start.
 
+- **The mesh speaks LIGHT** — when a node learns a new exact antibody it tells its pinned
+  peers, and that message is now a signed **LIGHT** packet (the estate's one codec,
+  `vendor/light`, created in the Konomi frame), not JSON. The receiver's LIGHT door checks
+  size, the pinned sender and the signature on the raw bytes *before a byte of the body is
+  decoded*, then re-runs every antigen through its own gate, exactly as before. A share from
+  an unpinned key, or a genuine share with one byte changed in transit, is refused at the
+  signature with its body never read; a 64-antigen batch is ~2.5× smaller than the JSON it
+  replaced (`node tools/light-share.mjs` → `receipts/light-share.json`). `vendor/light`
+  is read-only, its SHA-256 pinned in `SOURCE.json` and checked by the tests.
+
 ## Proof it holds (and how you'd know if it didn't)
 
 - **`node attack-kit/redteam.mjs`** — our own battery across every vector in the brief
@@ -152,7 +162,8 @@ the un-forgeable proof it's usable. Found something? Write it up in
 ## Layout
 
 ```
-src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost
+src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost · share (LIGHT mesh)
+vendor/light/  the estate's one codec (read-only, SHA-pinned) — nodes share antibodies as signed LIGHT packets
 pilot/      claims (sealed) · measure · check · judge · the egress meter · the metered node
 page/       the live page: app.mjs (the kernels, in the browser) · style.css
 feeds/      the UCI feed + SOURCES.json        costs/  the dated list prices the cost case reads

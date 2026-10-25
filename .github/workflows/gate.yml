@@ -14,6 +14,11 @@ jobs:
       - name: the red-team battery re-runs and must reproduce its receipt byte-for-byte
         run: node attack-kit/redteam.mjs --check
 
+      - name: the mesh over LIGHT — a forgery refused at node 0 is dropped on sight by the peers it was shared to
+        run: |
+          node tools/light-share.mjs
+          node -e "const f=require('./receipts/light-share.json').facts; const ok = f.k1.node0!=='admitted' && f.k1.node1==='recognised' && f.k1.node2==='recognised' && f.k1.sentLight>=1 && f.k2.unpinned.status===403 && f.k2.tampered.status===403 && f.k2.decodedAfter===f.k2.decodedBefore && f.k3.batch.ratio>=2; if(!ok){console.error('LIGHT mesh check failed',JSON.stringify(f)); process.exit(1)} console.log('LIGHT mesh: node0',f.k1.node0,'→ peers recognised; batch',f.k3.batch.ratio+'x smaller than JSON')"
+
       - name: the Liveware Pilot's receipt re-checked (ledger and books re-derived from the feed, the judge re-run, a real node on 3,000 records)
         run: node pilot/check.mjs
 

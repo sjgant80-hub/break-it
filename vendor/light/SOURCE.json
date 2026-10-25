@@ -1,0 +1,11 @@
+{
+ "repo": "sjgant80-hub/konomi-tongue",
+ "path": "light/",
+ "commit": "d6c8ec601bad97b7840ad89c4ca66f5b6d5ae38a",
+ "note": "LIGHT = the estate's one codec, created in the Konomi frame (Thomas Frumkin). Vendored read-only; src/share.mjs pins these hashes. Powered by the Konomi architecture, created by Thomas Frumkin.",
+ "files": {
+  "codec.mjs": "8dbdf84eaf8f35bfe08f8d1f4002e6b68e9775f10328b26203dc95801154d955",
+  "packet.mjs": "d565bdabdbfc063bf952d1e20cdb14c5564041667c60a560a56f930aff6e5245",
+  "sha256.mjs": "cf60afffd36df071b277da214ed61a7b3f4923e443bfadb06656bb7da4756bc1"
+ }
+}

@@ -11,7 +11,9 @@
 //
 //   POST /packet          raw packet bytes (Content-Length required, ≤ MAX_PACKET; chunked bodies refused)
 //   GET  /health /pubkeys /state /referee /immune /journal?since=&limit=
-//   POST /immune/share    a peer's signed antigens (JSON) — adopted only after this node's own gate re-runs them
+//   POST /immune/share    a peer's signed antigens — a LIGHT packet (vendor/light, src/share.mjs), checked at the
+//                         LIGHT door before its body is decoded; or JSON from a node that predates LIGHT — and in
+//                         both cases adopted only after this node's own gate re-runs every antigen
 // ════════════════════════════════════════════════════════════════
 import http from 'node:http';
 import { createHash } from 'node:crypto';
@@ -29,6 +31,8 @@ import { mintRune, questLog } from './loot.mjs';
 import { difficultyFor, challenge, verifyWork } from './rebound.mjs';
 import { appendFileSync, readFileSync as readText, existsSync as exists } from 'node:fs';
 import { verify as edVerify } from 'node:crypto';
+import { prepare as lightPrepare, finish as lightFinish, open as lightOpen, KINDS as LIGHT_KINDS } from '../vendor/light/packet.mjs';
+import { meshOrder, antigensToBytes, bytesToAntigens, nextCounter } from './share.mjs';
 
 export const LIMITS = Object.freeze({ rate: 300, burst: 600, queue: 1024, shareBytes: 65536, shareAntigens: 64, shareEveryMs: 250, ipTable: 10000 });
 const hexOf = (u8) => Buffer.from(u8).toString('hex');
@@ -63,7 +67,8 @@ function readBody(req, max) {
 
 /**
  * Start one node. opts: { port, host, ledgerPath, journalPath, pubkeys {id: hex}, nodeKey (private KeyObject),
- * peers [{ url, key (hex) }], now () → ms (injected so tests control time), log }
+ * peers [{ url, key (hex) }], now () → ms (injected so tests control time), log,
+ * shareAs 'light' (default: shares are LIGHT packets) | 'json' (as nodes shared before LIGHT) }
  */
 export async function startNode(opts) {
   const o = opts || {};
@@ -75,6 +80,13 @@ export async function startNode(opts) {
   const sign = o.nodeKey ? signWith(o.nodeKey) : null;
   const peers = Array.isArray(o.peers) ? o.peers.filter((p) => p && /^[0-9a-f]{64}$/.test(p.key)) : [];
   const peerKeys = new Map(peers.map((p) => [p.key, publicFromRaw(Buffer.from(p.key, 'hex'))]));
+  // the LIGHT mesh: every node sorts the pinned keys (its own and its peers') the same way, and a node's place in that
+  // order is the sender byte on its shares; a share counter only moves forward, per sender
+  const mesh = meshOrder(nodePub ? [nodePub, ...peers.map((p) => p.key)] : []) || [];
+  const meIndex = nodePub ? mesh.indexOf(nodePub) : -1;
+  const shareAs = o.shareAs === 'json' ? 'json' : 'light';
+  const shareSeen = new Map();
+  let shareCounter = 0n;
 
   // ── state, rebuilt from the ledger: every packet re-run through the gate — a ledger the gate refuses will not start
   const ledger = openChain(o.ledgerPath);
@@ -114,7 +126,8 @@ export async function startNode(opts) {
     if (r.detail === 'full' && r.bytes && r.size <= MAX_PACKET && r.bytes.length === r.size * 2) relearn(new Uint8Array(Buffer.from(r.bytes, 'hex')), r.family);
   }
 
-  const stats = { admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0 };
+  const stats = { admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0,
+    light: { sent: 0, received: 0, admitted: 0, decoded: 0, refused: {} } };   // LIGHT shares: decoded counts every time the door let the decoder run
   // the loot: Legendary runes (signed, persisted), Epic autoimmune events
   const lootPath = o.lootPath || null;
   const runes = [], epics = [];
@@ -187,15 +200,27 @@ export async function startNode(opts) {
   }
   function flush() {
     if (!outbox.length) return;
-    const antigens = outbox.splice(0).map((b) => hexOf(b));
-    const body = JSON.stringify({ v: 1, from: nodePub, antigens, sig: hexOf(sign(Buffer.from(SHARE_DOMAIN + nodePub + '|' + JSON.stringify(antigens)))) });
+    const list = outbox.splice(0);
+    let body, type;
+    if (shareAs === 'light' && meIndex >= 0) {
+      shareCounter = nextCounter(shareCounter, now());
+      const p = lightPrepare({ sender: meIndex, counter: shareCounter, kind: LIGHT_KINDS.BYTES, bytes: antigensToBytes(list), dictId: 0 });
+      const f = p.ok ? lightFinish(p.unsigned, sign(p.signed)) : p;
+      if (!f.ok) return;
+      body = Buffer.from(f.bytes); type = 'application/x-light';
+      stats.light.sent++;
+    } else {
+      const antigens = list.map((b) => hexOf(b));
+      body = Buffer.from(JSON.stringify({ v: 1, from: nodePub, antigens, sig: hexOf(sign(Buffer.from(SHARE_DOMAIN + nodePub + '|' + JSON.stringify(antigens)))) }));
+      type = 'application/json';
+    }
     for (const p of peers) {
       try {
         const u = new URL('/immune/share', p.url);
-        const req = http.request(u, { method: 'POST', headers: { 'content-type': 'application/json', 'content-length': Buffer.byteLength(body) }, timeout: 2000 });
+        const req = http.request(u, { method: 'POST', headers: { 'content-type': type, 'content-length': body.length }, timeout: 2000 });
         req.on('error', () => {}); req.on('timeout', () => req.destroy());
         req.end(body);
-        stats.shared += antigens.length;
+        stats.shared += list.length;
       } catch { /* a peer that cannot be reached is simply not told — the others are */ }
     }
   }
@@ -279,7 +304,29 @@ export async function startNode(opts) {
     return p;
   };
 
-  function adoptShare(body, source) {
+  // a share arrives: a LIGHT packet goes through the LIGHT door, anything else is read as the JSON shares of before
+  function adoptShare(bytes) {
+    if (bytes.length >= 4 && bytes[0] === 0x4c && bytes[1] === 0x47 && bytes[2] === 0x54 && bytes[3] === 0x31) return adoptLight(bytes);
+    return adoptJson(Buffer.from(bytes).toString('utf8'));
+  }
+  function adoptLight(bytes) {
+    stats.light.received++;
+    const r = lightOpen(bytes, {
+      keyFor: (s) => (s !== meIndex && mesh[s] && peerKeys.get(mesh[s])) || null,
+      verify: (m, sig, key) => { try { return edVerify(null, Buffer.from(m), key, Buffer.from(sig)); } catch { return false; } },
+      dictFor: () => null, lastCounter: (s) => shareSeen.get(s) || 0n, maxPacket: LIMITS.shareBytes, maxBody: LIMITS.shareBytes,
+    });
+    if (r.decoded) stats.light.decoded++;
+    const no = (code, stage, reason) => { stats.light.refused[stage] = (stats.light.refused[stage] || 0) + 1; return { code, body: { adopted: 0, stage, reason } }; };
+    if (!r.admit) return no(403, r.stage, r.reason);
+    shareSeen.set(r.sender, r.counter);
+    if (r.kind !== LIGHT_KINDS.BYTES) return no(400, 'body', 'a share body is antigen bytes');
+    const parsed = bytesToAntigens(r.bytes, LIMITS.shareAntigens);
+    if (!parsed.ok) return no(400, 'body', parsed.why);
+    stats.light.admitted++;
+    return { code: 200, body: { adopted: adoptAntigens(parsed.list, mesh[r.sender]) } };
+  }
+  function adoptJson(body) {
     let m;
     try { m = JSON.parse(body); } catch { return { code: 400, body: { adopted: 0, reason: 'not JSON' } }; }
     if (!m || m.v !== 1 || typeof m.from !== 'string' || !peerKeys.has(m.from) || !Array.isArray(m.antigens) || typeof m.sig !== 'string') return { code: 403, body: { adopted: 0, reason: 'not from a pinned peer' } };
@@ -287,9 +334,12 @@ export async function startNode(opts) {
     let ok = false;
     try { ok = edVerify(null, Buffer.from(SHARE_DOMAIN + m.from + '|' + JSON.stringify(m.antigens)), peerKeys.get(m.from), Buffer.from(m.sig, 'hex')); } catch { ok = false; }
     if (!ok) return { code: 403, body: { adopted: 0, reason: 'the share signature does not verify' } };
+    return { code: 200, body: { adopted: adoptAntigens(m.antigens.map((h) => new Uint8Array(Buffer.from(h, 'hex'))), m.from) } };
+  }
+  // every antigen re-run on THIS node's gate — never take a peer's word — and kept only where the gate refuses it
+  function adoptAntigens(list, from) {
     let adopted = 0;
-    for (const h of m.antigens) {
-      const bytes = new Uint8Array(Buffer.from(h, 'hex'));
+    for (const bytes of list) {
       const v = decide(bytes, ctx);                                // re-run on THIS node's gate — never take a peer's word
       if (v.admit) continue;                                      // valid here: adopting it would be autoimmunity
       const stage = immuneStage(v);
@@ -301,11 +351,11 @@ export async function startNode(opts) {
       library = r.library;
       if (r.added) {
         adopted++;
-        journal.record({ at: new Date(now()).toISOString(), source: 'peer:' + m.from.slice(0, 16), stage: v.stage, reason: 'learned from a peer, re-run here: ' + v.reason, family, print: fingerprint(family, { bytes }), novel: false, detail: 'full', bytes, context: { keyset: keys.keyset, stage, from: m.from } });
+        journal.record({ at: new Date(now()).toISOString(), source: 'peer:' + from.slice(0, 16), stage: v.stage, reason: 'learned from a peer, re-run here: ' + v.reason, family, print: fingerprint(family, { bytes }), novel: false, detail: 'full', bytes, context: { keyset: keys.keyset, stage, from } });
       }
     }
     stats.adoptedFromPeers += adopted;
-    return { code: 200, body: { adopted } };
+    return adopted;
   }
 
   const server = http.createServer({ requestTimeout: 3000, headersTimeout: 2000, keepAliveTimeout: 1000, maxHeaderSize: 8192 }, async (req, res) => {
@@ -332,7 +382,7 @@ export async function startNode(opts) {
       if (req.method === 'POST' && url.pathname === '/immune/share') {
         const body = await readBody(req, LIMITS.shareBytes);
         if (!body.ok) return sendJson(res, 400, { adopted: 0, reason: body.why });
-        const r = await serial(() => adoptShare(Buffer.from(body.bytes).toString('utf8'), source));
+        const r = await serial(() => adoptShare(body.bytes));
         return sendJson(res, r.code, r.body);
       }
       if (req.method !== 'GET') return sendJson(res, 405, { error: 'method not allowed' });

@@ -1,0 +1,56 @@
+{
+ "kind": "break-it.light-share",
+ "v": 1,
+ "ran": "2026-10-25T17:28:39.629Z",
+ "node": "v25.7.0",
+ "facts": {
+  "k1": {
+   "node0": "signature",
+   "node1": "recognised",
+   "node2": "recognised",
+   "sentLight": 1,
+   "admittedLight": [
+    1,
+    1
+   ],
+   "adopted": [
+    1,
+    1
+   ]
+  },
+  "k2": {
+   "unpinned": {
+    "status": 403,
+    "stage": "signature"
+   },
+   "tampered": {
+    "status": 403,
+    "stage": "signature"
+   },
+   "decodedBefore": 1,
+   "decodedAfter": 1,
+   "refused": {
+    "signature": 2
+   },
+   "genuineAfter": {
+    "status": 200,
+    "adopted": 0,
+    "decodedAfter": 2
+   }
+  },
+  "k3": {
+   "one": {
+    "antigens": 1,
+    "json": 410,
+    "light": 178,
+    "ratio": 2.303
+   },
+   "batch": {
+    "antigens": 64,
+    "json": 11667,
+    "light": 4671,
+    "ratio": 2.498
+   }
+  }
+ }
+}
