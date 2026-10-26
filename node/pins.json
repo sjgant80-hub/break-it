@@ -1,0 +1,7 @@
+{
+ "kind": "break-it.node.pins",
+ "note": "The pinned key table the screen skill checks BRK1 packets against. Sender 1 is a PUBLIC TEST KEY, made from the seed 32 bytes of 0x28, so anyone can sign a packet it admits. The live gateway pins its own keys in config/, which is never committed.",
+ "pins": {
+  "1": "e92eb6054fe9bc682a1bcf3b759f65ab38a4cfbd81c4d1f3342e4cc9cded8b0b"
+ }
+}

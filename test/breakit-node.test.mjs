@@ -8,7 +8,7 @@ import { makeIdentity, hex } from '../vendor/fall-kit-core/identity.mjs';
 import { createNode, receiptHolds, readCard } from '../vendor/fall-kit-core/node.mjs';
 import { encodeUnsigned, withSignature, rawCheck, signedBytes, OPS } from '../src/wire.mjs';
 
-const pins = JSON.parse(readFileSync(new URL('../config/pubkeys.json', import.meta.url), 'utf8'));
+const pins = JSON.parse(readFileSync(new URL('../node/pins.json', import.meta.url), 'utf8')).pins;
 const seed = (n) => new Uint8Array(32).fill(n);
 const rec = (sender) => encodeUnsigned({ sender, counter: 1n, op: OPS.REC, account: 1000, period: 63, amount: 100 });
 
@@ -26,6 +26,11 @@ test('screen: break-it’s own gate decides, at the stage it names', async () =>
   const stranger = await makeIdentity(seed(30));
   const forged = withSignature(rec(1), await stranger.sign(signedBytes(zero, rawCheck(zero).n)));
   assert.equal((await screen(pins, forged)).stage, 'signature');
+  // the committed table's sender 1 is a public test key: a record it signs is admitted
+  const tester = await makeIdentity(new Uint8Array(32).fill(0x28));
+  assert.equal(tester.id, pins['1'], 'node/pins.json is the public test key it says it is');
+  const signed = withSignature(rec(1), await tester.sign(signedBytes(zero, rawCheck(zero).n)));
+  assert.equal((await screen(pins, signed)).admit, true);
   // a packet signed by a key break-it pins, at any counter (the screen is stateless): admitted
   const own = await makeIdentity(seed(31));
   const myPins = { 5: own.id };

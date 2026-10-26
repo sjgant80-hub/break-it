@@ -3,8 +3,9 @@
 // shared foundation (vendor/fall-kit-core, copied verbatim from fall-kit/core and pinned).
 //
 // Its skill is `screen`: hand it the bytes of a BRK1 packet (as hex) and break-it's own gate (src/gate.mjs) decides,
-// against break-it's committed pinned key table (config/pubkeys.json), whether it is a well-formed BRK1 packet signed
-// by a pinned sender — and at which stage it fails if not. The screen is STATELESS: it checks size, magic, schema,
+// against the pinned key table it is given, whether it is a well-formed BRK1 packet signed
+// by a pinned sender — and at which stage it fails if not. The node's committed table is node/pins.json (a public test
+// key; the live gateway's own keys live in config/, which is never committed). The screen is STATELESS: it checks size, magic, schema,
 // sender and signature, and takes the packet's own counter as the next one, because a screen holds no counter store
 // (the live gateway does; see src/server.mjs). The answer carries a receipt the asker can re-hash. The node is also the
 // estate's immune hub: what its door refuses becomes an antibody it can share.
@@ -37,7 +38,7 @@ export async function screen(pins, bytes) {
   });
 }
 
-/** { identity, genesis, clock, budget, pins (break-it's config/pubkeys.json: sender → hex key) }. */
+/** { identity, genesis, clock, budget, pins (sender → hex key; node/pins.json's `pins` is the committed table) }. */
 export async function breakitNode({ identity, genesis, clock, budget, pins = {} } = {}) {
   const keyset = shaHex(new TextEncoder().encode(JSON.stringify(Object.keys(pins).sort().map((k) => [k, pins[k]]))));
   const skills = {
