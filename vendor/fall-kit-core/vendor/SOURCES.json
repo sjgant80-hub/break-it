@@ -73,7 +73,7 @@
    "commit": "d6be032c03855aac6aa0fd1a8b4c6a06cd6e93e3",
    "src": "fall-remember.mjs",
    "sha256": "6f7d81915d66b91bb488bf98f5be98f63122fad618c12b9062821211bdd31f80",
-   "what": "geometric memory: twelve chambers, recall by meaning"
+   "what": "geometric memory: twelve chambers, recall by resemblance of words"
   },
   {
    "path": "memory/cam.mjs",
