@@ -1,13 +1,16 @@
 {
  "kind": "fall-kit.core.vendored",
- "from": "https://github.com/sjgant80-hub/fall-kit/tree/689f271918769b1625ea5e64b098f35fea408eb0/core",
- "commit": "689f271918769b1625ea5e64b098f35fea408eb0",
+ "from": "https://github.com/sjgant80-hub/fall-kit/tree/cbb17a6789db4db82792afe9ac96a28d7fdb0dee/core",
+ "commit": "cbb17a6789db4db82792afe9ac96a28d7fdb0dee",
  "note": "The estate’s shared foundation, copied verbatim. Never edit; re-vendor with fall-kit’s core/tools/vendor-into.mjs.",
  "files": {
   "antibody.mjs": "cb507411787cc6bb07891acd24c5d9ee8de85b762706205154fe9ac1d6dd1514",
+  "edge.mjs": "35d1bfa10a37ec4ea9d45b2724f7a0decd96f506266c877946cc173126f39125",
   "identity.mjs": "429caa25bf0e104f6a664224d81fd8215d2f6c79aad3323a8acb476f85a3856e",
-  "node.mjs": "2c2bb62848b23c1cd49f70cc4f297277ce8b744fb39e03f3664c4246c4b7d8ae",
-  "vendor/SOURCES.json": "f20899acd01b9fdb079720156d26d838e0f716da4187e2520852ec1691658a32",
+  "node.mjs": "07ae10354d0461679c250b6adf04802293d79796cc544d7f16e0a0287793453a",
+  "relay.mjs": "e91e88a01ec3340c02e41e1b03df208a6af4d224aeea6275a70965646ce89c21",
+  "roster.mjs": "1e2af608378f1b93fe5b50215ce46b395739474766071b61e67dbc43ef0919e1",
+  "vendor/SOURCES.json": "63048d45a7669d204ad88e88a703ba97e48d33d1576a6390c2af67175b353d84",
   "vendor/light/codec.mjs": "4f018272a05989fe8fbd0f675e0460b35365710a174a88dbf628165ef21f431d",
   "vendor/light/packet.mjs": "d565bdabdbfc063bf952d1e20cdb14c5564041667c60a560a56f930aff6e5245",
   "vendor/light/vault.mjs": "827cc46f9782911a7a67a44733bdebb4bd3f3f35de8287afd9b4b064b3f7d0ad",
@@ -17,6 +20,7 @@
   "vendor/wallet/wallet.mjs": "9a01dcb6134cdf724e1717b757fca7843544137e0c6051510a1d15682c6166f6",
   "vendor/ledger/contrib.mjs": "b275501705812dd6caf61833da69bd45070095d22a5b9fc700d4371927a6ffc3",
   "vendor/memory/fall-remember.mjs": "6f7d81915d66b91bb488bf98f5be98f63122fad618c12b9062821211bdd31f80",
-  "vendor/memory/cam.mjs": "f28483c3993ccb1b2e5a1bfc2a23e245b3ad3f90d4a8f75aca918226e3d2c1d7"
+  "vendor/memory/cam.mjs": "f28483c3993ccb1b2e5a1bfc2a23e245b3ad3f90d4a8f75aca918226e3d2c1d7",
+  "vendor/sync/crdt.mjs": "992f47d8b805a2af0e8694e2d72066f6e42407cddc8f54acb47ce81cf9ac2b77"
  }
 }

@@ -82,6 +82,14 @@
    "src": "cam.mjs",
    "sha256": "f28483c3993ccb1b2e5a1bfc2a23e245b3ad3f90d4a8f75aca918226e3d2c1d7",
    "what": "the balance metric fall-remember reports"
+  },
+  {
+   "path": "sync/crdt.mjs",
+   "repo": "fallsync",
+   "commit": "b344b18d5f3c3d9d7e07ed6a0e91562443d4b2a2",
+   "src": "crdt.mjs",
+   "sha256": "992f47d8b805a2af0e8694e2d72066f6e42407cddc8f54acb47ce81cf9ac2b77",
+   "what": "shared state: a last-writer-wins map over Lamport time (Phase 3)"
   }
  ]
 }

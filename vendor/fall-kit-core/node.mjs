@@ -13,7 +13,11 @@
 //   the contribution    every verified answer it uses is a signed value record in the contribution ledger
 //   record              (vendor/ledger/contrib.mjs), counted only where this node can re-check the proof;
 //   its couplings       a weight per peer and skill that grows when an answer's proof checks and shrinks when it does
-//                       not — asks go to the strongest live link, and links below the floor are pruned.
+//                       not — asks go to the strongest live link, and links below the floor are pruned. An ask nobody
+//                       answers can be expired (Phase 3): it counts as a failed answer, so a node that died is routed
+//                       around;
+//   shared state        documents every member keeps a copy of, merged by the CRDT law (vendor/sync/crdt.mjs: last
+//                       writer wins by Lamport time), carried as signed LIGHT packets from pinned peers only (Phase 3).
 //
 // Pinning is the only way a peer is trusted: its card is self-signed (it holds the key it names), but whether to trust
 // that key is the owner's decision, made out of band. Transport is not here: hear() and the ask/share verbs return
@@ -28,6 +32,7 @@ import { makeBundle, verifyBundle, fromHex, toHex } from './vendor/immune/exchan
 import { adoptAntigens } from './vendor/immune/subscribe.mjs';
 import * as W from './vendor/wallet/wallet.mjs';
 import * as L from './vendor/ledger/contrib.mjs';
+import { emptyDoc, setKey, merge, validDoc, valueOf } from './vendor/sync/crdt.mjs';
 import { FallRemember } from './vendor/memory/fall-remember.mjs';
 import { mint, adopt, recognise, emptyLibrary, hashOf, familyOf, PERMANENT } from './antibody.mjs';
 import { verifyBytes, keysetOf, walletCrypto, slotOf, hex, unhex } from './identity.mjs';
@@ -87,6 +92,7 @@ export function readMessage(v) {
   }
   if (v.t === 'antibody') return isObj(v.bundle) ? { ok: true, t: 'antibody', to: v.to, bundle: v.bundle } : { ok: false, why: 'an antibody message carries a bundle' };
   if (v.t === 'ledger') return Array.isArray(v.log) ? { ok: true, t: 'ledger', to: v.to, log: v.log } : { ok: false, why: 'a ledger message carries a log' };
+  if (v.t === 'sync') return validDoc(v.doc) ? { ok: true, t: 'sync', to: v.to, doc: v.doc } : { ok: false, why: 'a sync message carries a document' };
   return { ok: false, why: 'message type ' + String(v.t).slice(0, 24) + ' is not spoken here' };
 }
 
@@ -136,7 +142,8 @@ export async function readCard(c) {
 
 /**
  * opts: { name, identity (identity.mjs makeIdentity), skills: { skill: async (input) => answer }, checks: { skill:
- * (answer) => bool | Promise }, budget (whole asks; default DEFAULT_BUDGET), genesis (a signed contribution-ledger genesis, or none), genome, clock }.
+ * (answer) => bool | Promise }, budget (whole asks; default DEFAULT_BUDGET), genesis (a signed contribution-ledger genesis, or none), genome, clock,
+ * docs (the shared documents this node keeps; default ['mesh']) }.
  */
 export async function createNode(opts) {
   const o = isObj(opts) ? opts : {};
@@ -149,9 +156,10 @@ export async function createNode(opts) {
   const g = await W.genesis(wc, { caps: ['ask'], budget: Number.isSafeInteger(o.budget) && o.budget >= 0 ? o.budget : DEFAULT_BUDGET });
   const st = {
     wallet: g.wallet, sk: g.sk, out: 0n, asks: 0,
-    peers: new Map(), pending: new Map(), served: new Map(), used: new Map(),
+    peers: new Map(), pending: new Map(), served: new Map(), used: new Map(), retired: new Map(),
     library: emptyLibrary(), antigens: [], memory: new FallRemember(), ledger: L.empty(),
     seen: { admitted: 0, refused: 0, recognised: 0, sent: 0 },
+    docs: new Map((Array.isArray(o.docs) ? o.docs : ['mesh']).map(emptyDoc).filter(Boolean).map((d) => [d.docId, d])),
   };
 
   const body = { schema: SCHEMA, id: me.id, wallet: me.wallet.pk, name, slot: me.slot, skills: Object.keys(skills).filter((s) => SKILL.test(s)).sort().slice(0, MAX_SKILLS), genome: isObj(o.genome) ? o.genome : null };
@@ -235,7 +243,16 @@ export async function createNode(opts) {
   }
 
   // ── hearing ──
-  async function hear(bytes) {
+  // One packet at a time: the door reads a peer's last counter and moves it on, and between the two the signature is
+  // checked asynchronously. Heard at the same moment, two packets would both read the old counter and the lower could
+  // set it back, letting the higher be replayed. Found going live (Phase 3); hearing is now a queue.
+  let line = Promise.resolve();
+  function hear(bytes) {
+    const turn = line.then(() => hearOne(bytes));
+    line = turn.catch(() => {});
+    return turn;
+  }
+  async function hearOne(bytes) {
     const ks = keyset(), hash = hashOf(bytes);
     const known = recognise(st.library, bytes, { keyset: ks, hash });
     if (known.exact) {
@@ -256,6 +273,7 @@ export async function createNode(opts) {
     if (m.t === 'ask') return onAsk(m, match, hash);
     if (m.t === 'answer') return onAnswer(m, match, hash);
     if (m.t === 'antibody') return onAntibody(m, match);
+    if (m.t === 'sync') return onSync(m, match);
     return onLedger(m, match);
   }
 
@@ -315,6 +333,15 @@ export async function createNode(opts) {
     return { ok: true, t: 'antibody', from: peer.id, offered: pre.antigens.length, adopted: r.adopted, autoimmuneBlocked: r.autoimmuneBlocked, recognitionOnly: r.recognitionOnly, replies: [] };
   }
 
+  function onSync(m, peer) {
+    const d = st.docs.get(m.doc.docId);
+    if (d === undefined) return { ok: false, t: 'sync', from: peer.id, reason: 'this node keeps no document ' + m.doc.docId, replies: [] };
+    const r = merge(d, m.doc);   // the shape was checked when the message was read
+    st.docs.set(d.docId, r.doc);
+    remember('merged ' + r.changed.length + ' keys of ' + d.docId + ' from ' + peer.name, { kind: 'sync', from: peer.id, doc: d.docId, changed: r.changed.length });
+    return { ok: true, t: 'sync', from: peer.id, doc: d.docId, changed: r.changed.length, replies: [] };
+  }
+
   async function onLedger(m, peer) {
     const theirs = await L.replay(m.log, { gate: async () => ({ ok: true }) });   // rebuild their chain (signatures checked); trust nothing yet
     if (!theirs.ok || !st.ledger.genesis) return { ok: false, t: 'ledger', from: peer.id, reason: theirs.ok ? 'this node keeps no ledger' : theirs.why, replies: [] };
@@ -330,7 +357,9 @@ export async function createNode(opts) {
     if (!r.ok) return r;
     if (c.id === me.id) return { ok: false, why: 'a node does not pin itself' };
     const prev = st.peers.get(c.id);
-    st.peers.set(c.id, { id: c.id, raw: unhex(c.id), slot: c.slot, name: c.name, wallet: c.wallet, skills: c.skills.slice(), body: r.body, inCounter: prev ? prev.inCounter : 0n, links: prev ? prev.links : new Map() });
+    // a key pinned again after an unpin keeps its last counter, so nothing it sent before can be replayed
+    const inCounter = prev ? prev.inCounter : st.retired.has(c.id) ? st.retired.get(c.id) : 0n;
+    st.peers.set(c.id, { id: c.id, raw: unhex(c.id), slot: c.slot, name: c.name, wallet: c.wallet, skills: c.skills.slice(), body: r.body, inCounter, links: prev ? prev.links : new Map() });
     const released = isObj(c.release) ? await record(c.release) : false;   // the ledger refuses a second release, or one with no genesis
     return { ok: true, id: c.id, released };
   }
@@ -358,6 +387,41 @@ export async function createNode(opts) {
     return say(to, { t: 'antibody', bundle });
   }
 
+  /** Stop trusting a peer (the founder's roster no longer names it): its key is dropped, so what it sends stops at the
+   *  sender, and the asks waiting on it are given up. Its last counter is kept for a later pin. */
+  function unpin(id) {
+    const p = st.peers.get(id);
+    if (p === undefined) return { ok: false, why: 'no pinned peer ' + String(id).slice(0, 40) };
+    st.peers.delete(id);
+    st.retired.set(id, p.inCounter);
+    let dropped = 0;
+    for (const [job, q] of [...st.pending]) if (q.to === id) { st.pending.delete(job); dropped++; }
+    remember('unpinned ' + p.name + ': no longer trusted', { kind: 'unpinned', peer: id, dropped });
+    return { ok: true, id, dropped };
+  }
+
+  /** An ask nobody answered, given up: it counts as a failed answer, so a peer that died is routed around. */
+  function expire(id) {
+    const p = st.pending.get(id);
+    if (p === undefined) return { ok: false, why: 'no ask ' + String(id).slice(0, 40) + ' is waiting' };
+    st.pending.delete(id);
+    const peer = st.peers.get(p.to);
+    peer.links.set(p.skill, hebb(peer.links.has(p.skill) ? peer.links.get(p.skill) : LINK.START, 'failed'));
+    remember('ask ' + id + ' to ' + peer.name + ' expired unanswered', { kind: 'expired', to: p.to, skill: p.skill, job: id });
+    return { ok: true, to: p.to, skill: p.skill, weight: peer.links.get(p.skill) };
+  }
+
+  /** One write to a shared document, stamped by this node. */
+  function setShared(docId, key, value) {
+    const d = st.docs.get(docId);
+    if (d === undefined) return { ok: false, why: 'this node keeps no document ' + String(docId).slice(0, 40) };
+    const r = setKey(d, me.id, key, value);
+    if (!r.ok) return r;
+    st.docs.set(docId, r.doc);
+    return { ok: true, entry: r.entry };
+  }
+  async function shareSync(to, docId) { return st.peers.has(to) && st.docs.has(docId) ? say(to, { t: 'sync', doc: st.docs.get(docId) }) : null; }
+
   async function shareLedger(to) { return st.peers.has(to) && st.ledger.genesis ? say(to, { t: 'ledger', log: st.ledger.log }) : null; }
 
   async function vault() {
@@ -376,7 +440,11 @@ export async function createNode(opts) {
   return Object.freeze({
     id: me.id, name, slot: me.slot,
     card: () => card,
-    pin, hear, ask, shareAntibodies, shareLedger, vault,
+    pin, unpin, hear, ask, shareAntibodies, shareLedger, vault, expire, setShared, shareSync,
+    pinned: () => [...st.peers.keys()].sort(),
+    shared: (docId) => (st.docs.has(docId) ? valueOf(st.docs.get(docId)) : null),
+    sharedDoc: (docId) => (st.docs.has(docId) ? st.docs.get(docId) : null),
+    pending: () => [...st.pending.keys()],
     weight: (peer, skill) => { const p = st.peers.get(peer); return p && p.links.has(skill) ? p.links.get(skill) : LINK.START; },
     recall: (q, k = 3) => st.memory.retrieve(String(q), { k }),
     credits: () => L.credits(st.ledger),
