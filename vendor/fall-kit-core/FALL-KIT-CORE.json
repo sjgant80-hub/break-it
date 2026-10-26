@@ -1,0 +1,22 @@
+{
+ "kind": "fall-kit.core.vendored",
+ "from": "https://github.com/sjgant80-hub/fall-kit/tree/9d26891ab97816b0d7d4081e9a6480d4a00c7060/core",
+ "commit": "9d26891ab97816b0d7d4081e9a6480d4a00c7060",
+ "note": "The estate’s shared foundation, copied verbatim. Never edit; re-vendor with fall-kit’s core/tools/vendor-into.mjs.",
+ "files": {
+  "antibody.mjs": "cb507411787cc6bb07891acd24c5d9ee8de85b762706205154fe9ac1d6dd1514",
+  "identity.mjs": "429caa25bf0e104f6a664224d81fd8215d2f6c79aad3323a8acb476f85a3856e",
+  "node.mjs": "2c2bb62848b23c1cd49f70cc4f297277ce8b744fb39e03f3664c4246c4b7d8ae",
+  "vendor/SOURCES.json": "fc89d1fa217a94ed2d54361450710b1bb5acee668f938b191c533f8fafb2f8b1",
+  "vendor/light/codec.mjs": "4f018272a05989fe8fbd0f675e0460b35365710a174a88dbf628165ef21f431d",
+  "vendor/light/packet.mjs": "d565bdabdbfc063bf952d1e20cdb14c5564041667c60a560a56f930aff6e5245",
+  "vendor/light/vault.mjs": "827cc46f9782911a7a67a44733bdebb4bd3f3f35de8287afd9b4b064b3f7d0ad",
+  "vendor/light/sha256.mjs": "cf60afffd36df071b277da214ed61a7b3f4923e443bfadb06656bb7da4756bc1",
+  "vendor/immune/exchange.mjs": "e5b026b4f4c3115b1b796f05ee7c20afb3b4b5769a469f0f8adfa2f08a1955bd",
+  "vendor/immune/subscribe.mjs": "4e7f347bb58e909430ec87f3ec10fb1c9fcaa46e75fec1115ef03ae128c55c6a",
+  "vendor/wallet/wallet.mjs": "9a01dcb6134cdf724e1717b757fca7843544137e0c6051510a1d15682c6166f6",
+  "vendor/ledger/contrib.mjs": "b275501705812dd6caf61833da69bd45070095d22a5b9fc700d4371927a6ffc3",
+  "vendor/memory/fall-remember.mjs": "6f7d81915d66b91bb488bf98f5be98f63122fad618c12b9062821211bdd31f80",
+  "vendor/memory/cam.mjs": "f28483c3993ccb1b2e5a1bfc2a23e245b3ad3f90d4a8f75aca918226e3d2c1d7"
+ }
+}

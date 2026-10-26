@@ -164,6 +164,7 @@ the un-forgeable proof it's usable. Found something? Write it up in
 ```
 src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost · share (LIGHT mesh)
 vendor/light/  the estate's one codec (read-only, SHA-pinned) — nodes share antibodies as signed LIGHT packets
+node/       break-it as a node of the estate's shared foundation (vendor/fall-kit-core, pinned): its gate offered as the screen skill
 pilot/      claims (sealed) · measure · check · judge · the egress meter · the metered node
 page/       the live page: app.mjs (the kernels, in the browser) · style.css
 feeds/      the UCI feed + SOURCES.json        costs/  the dated list prices the cost case reads

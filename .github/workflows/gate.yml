@@ -27,3 +27,9 @@ jobs:
 
       - name: the vaccines — every attack ever journalled, replayed through the gate (if present)
         run: node tools/vaccinate.mjs --check || echo "no vaccine file yet — skipping"
+
+      - name: break-it as a node of the shared foundation — the adapter's mutation gate (witness v0.6, in one process under the OS timeout)
+        run: |
+          git clone --depth 1 --branch v0.6 https://github.com/sjgant80-hub/witness.git /tmp/witness6
+          node /tmp/witness6/witness.mjs mutate node/breakit-node.mjs --timeout 120000 --cap 400 --test timeout -k 5 90 node test/breakit-node.test.mjs | tee /tmp/wn.txt
+          grep -q '"clean": true' /tmp/wn.txt || { echo "::error::mutants survived in node/breakit-node.mjs"; exit 1; }

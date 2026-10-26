@@ -1,0 +1,87 @@
+{
+ "kind": "fall-kit.core.vendor",
+ "v": 1,
+ "note": "Copied verbatim from each repo at the commit named. Never edit a vendored file; re-vendor.",
+ "files": [
+  {
+   "path": "light/codec.mjs",
+   "repo": "konomi-tongue",
+   "commit": "c5ef3dafb453a175cca3561f6df1f3e650d34298",
+   "src": "light/codec.mjs",
+   "sha256": "4f018272a05989fe8fbd0f675e0460b35365710a174a88dbf628165ef21f431d",
+   "what": "LIGHT: the lossless context-mixing codec"
+  },
+  {
+   "path": "light/packet.mjs",
+   "repo": "konomi-tongue",
+   "commit": "c5ef3dafb453a175cca3561f6df1f3e650d34298",
+   "src": "light/packet.mjs",
+   "sha256": "d565bdabdbfc063bf952d1e20cdb14c5564041667c60a560a56f930aff6e5245",
+   "what": "LIGHT: the signed packet and its verify-before-decode door"
+  },
+  {
+   "path": "light/vault.mjs",
+   "repo": "konomi-tongue",
+   "commit": "c5ef3dafb453a175cca3561f6df1f3e650d34298",
+   "src": "light/vault.mjs",
+   "sha256": "827cc46f9782911a7a67a44733bdebb4bd3f3f35de8287afd9b4b064b3f7d0ad",
+   "what": "LIGHT: many files as one solid stream, every hash checked"
+  },
+  {
+   "path": "light/sha256.mjs",
+   "repo": "konomi-tongue",
+   "commit": "c5ef3dafb453a175cca3561f6df1f3e650d34298",
+   "src": "light/sha256.mjs",
+   "sha256": "cf60afffd36df071b277da214ed61a7b3f4923e443bfadb06656bb7da4756bc1",
+   "what": "SHA-256, pure"
+  },
+  {
+   "path": "immune/exchange.mjs",
+   "repo": "immune-exchange",
+   "commit": "9886e1f2638f18e6d69df7ea455327425c56b143",
+   "src": "src/exchange.mjs",
+   "sha256": "e5b026b4f4c3115b1b796f05ee7c20afb3b4b5769a469f0f8adfa2f08a1955bd",
+   "what": "the antibody bus: a signed bundle of refused attacks"
+  },
+  {
+   "path": "immune/subscribe.mjs",
+   "repo": "immune-exchange",
+   "commit": "9886e1f2638f18e6d69df7ea455327425c56b143",
+   "src": "src/subscribe.mjs",
+   "sha256": "4e7f347bb58e909430ec87f3ec10fb1c9fcaa46e75fec1115ef03ae128c55c6a",
+   "what": "negative selection: adopt only what your own gate refuses"
+  },
+  {
+   "path": "wallet/wallet.mjs",
+   "repo": "the-wallet",
+   "commit": "8e786ec5307166f0286a6f75dd1f89d98f061d84",
+   "src": "wallet.mjs",
+   "sha256": "9a01dcb6134cdf724e1717b757fca7843544137e0c6051510a1d15682c6166f6",
+   "what": "identity as a capability and a budget it cannot cross"
+  },
+  {
+   "path": "ledger/contrib.mjs",
+   "repo": "kcc-mesh",
+   "commit": "f3cdad533076ee9112c39a528639bf9671679026",
+   "src": "contrib.mjs",
+   "sha256": "b275501705812dd6caf61833da69bd45070095d22a5b9fc700d4371927a6ffc3",
+   "what": "the contribution ledger: signed, hash-chained, no money verb"
+  },
+  {
+   "path": "memory/fall-remember.mjs",
+   "repo": "fall-remember",
+   "commit": "d6be032c03855aac6aa0fd1a8b4c6a06cd6e93e3",
+   "src": "fall-remember.mjs",
+   "sha256": "6f7d81915d66b91bb488bf98f5be98f63122fad618c12b9062821211bdd31f80",
+   "what": "geometric memory: twelve chambers, recall by meaning"
+  },
+  {
+   "path": "memory/cam.mjs",
+   "repo": "fall-remember",
+   "commit": "d6be032c03855aac6aa0fd1a8b4c6a06cd6e93e3",
+   "src": "cam.mjs",
+   "sha256": "f28483c3993ccb1b2e5a1bfc2a23e245b3ad3f90d4a8f75aca918226e3d2c1d7",
+   "what": "the balance metric fall-remember reports"
+  }
+ ]
+}
