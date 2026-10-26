@@ -16,6 +16,14 @@
 //                       not — asks go to the strongest live link, and links below the floor are pruned. An ask nobody
 //                       answers can be expired (Phase 3): it counts as a failed answer, so a node that died is routed
 //                       around;
+//   its notes           what it saw itself, shared with the mesh (Phase 3b): 'silent' when an ask of its own expired,
+//                       'lied' when a holder answered VERIFIED with a receipt its check refused, carrying that holder's
+//                       own signed answer. A peer's note moves nothing on the peer's word: a 'lied' note counts only if
+//                       the packet is the accused's own signed answer and fails this node's own check; a 'silent' note
+//                       makes the holder quiet here (asks go elsewhere) and sends it a probe, and only a probe that
+//                       expires unanswered counts. A quiet holder is live again the moment it is heard from. And an
+//                       asker tries every live holder once before it prefers one (untried first), so a liar that
+//                       ranks last is still found. routing: 'greedy' keeps Phase 3's routing, which ignores both;
 //   shared state        documents every member keeps a copy of, merged by the CRDT law (vendor/sync/crdt.mjs: last
 //                       writer wins by Lamport time), carried as signed LIGHT packets from pinned peers only (Phase 3).
 //
@@ -41,7 +49,12 @@ export const SCHEMA = 'fall-kit.node.v1';
 export const LINK = Object.freeze({ START: 500000, MAX: 1000000, FLOOR: 50000, GAIN: 4, ABSTAIN: 16, FAIL: 2 });
 export const DEFAULT_BUDGET = 10000;   // asks. Always finite: JSON has no infinity, so an unlimited budget cannot travel in a token
 export const MAX_PENDING = 256, MAX_ANTIGENS = 64, MAX_ANTIGEN_BYTES = 2048, MAX_SKILLS = 32;
-const ID = /^[a-z0-9][a-z0-9:._-]{0,95}$/, SKILL = /^[a-z0-9][a-z0-9-]{0,31}$/, HEX64 = /^[0-9a-f]{64}$/;
+// the notes a node keeps of its own and carries in one message; and the notes it remembers taking: every member's last
+// MAX_NOTES, for a mesh of 32 members (the most a mesh genesis names). One forgotten is at worst taken again: a silence
+// probed twice, or a proven lie counted twice against the one who signed it — never a cost to an honest node
+export const MAX_NOTES = 16, MAX_NOTED = MAX_NOTES * 32;
+export const ROUTING = Object.freeze(['shared', 'greedy']);
+const ID = /^[a-z0-9][a-z0-9:._-]{0,95}$/, SKILL = /^[a-z0-9][a-z0-9-]{0,31}$/, HEX64 = /^[0-9a-f]{64}$/, HEX = /^(?:[0-9a-f]{2})+$/;
 const isObj = (x) => Object.prototype.toString.call(x) === '[object Object]';
 const has = (o, k) => isObj(o) && Object.prototype.hasOwnProperty.call(o, k);
 
@@ -57,18 +70,22 @@ export function hebb(w, outcome) {
 }
 
 /**
- * Which peer an ask for this skill goes to. peers = [{ id, skills: [], weight(skill) }] → { id, weight, live } | null.
- * The strongest live link (at or above the floor) wins; a tie goes to the smaller id. With no live link the strongest
- * pruned one is tried, marked not live, so a pruned peer can earn its way back only when no one else holds the skill.
+ * Which peer an ask for this skill goes to. peers = [{ id, skills: [], weight(skill), tried?(skill), quiet?(skill) }]
+ * → { id, weight, live, untried } | null. A link is live at or above the floor, unless its peer is quiet (it went
+ * silent and has not been heard from since). Among live links one this asker has never tried comes first, then the
+ * strongest, then the smaller id. With no live link the strongest of the rest is tried, marked not live, so a pruned or
+ * quiet peer is asked only when no one else holds the skill. A peer that does not say whether it was tried or is quiet
+ * counts as tried and not quiet: that is Phase 3's routing, the strongest live link alone.
  */
 export function choose(peers, skill) {
   let best = null;
   for (const p of Array.isArray(peers) ? peers : []) {
     if (!isObj(p) || typeof p.id !== 'string' || !Array.isArray(p.skills) || !p.skills.includes(skill)) continue;
-    const w = typeof p.weight === 'function' ? p.weight(skill) : LINK.START;
-    const live = w >= LINK.FLOOR;
-    const better = best === null || (live && !best.live) || (live === best.live && (w > best.weight || (w === best.weight && p.id < best.id)));
-    if (better) best = { id: p.id, weight: w, live };
+    const given = typeof p.weight === 'function' ? p.weight(skill) : LINK.START, w = Number.isSafeInteger(given) ? given : LINK.START;   // junk is a fresh link, as in hebb
+    const live = w >= LINK.FLOOR && !(typeof p.quiet === 'function' && p.quiet(skill) === true);
+    const untried = live && typeof p.tried === 'function' && p.tried(skill) === false;
+    const better = best === null || (live && !best.live) || (live === best.live && ((untried && !best.untried) || (untried === best.untried && (w > best.weight || (w === best.weight && p.id < best.id)))));
+    if (better) best = { id: p.id, weight: w, live, untried };
   }
   return best;
 }
@@ -93,7 +110,20 @@ export function readMessage(v) {
   if (v.t === 'antibody') return isObj(v.bundle) ? { ok: true, t: 'antibody', to: v.to, bundle: v.bundle } : { ok: false, why: 'an antibody message carries a bundle' };
   if (v.t === 'ledger') return Array.isArray(v.log) ? { ok: true, t: 'ledger', to: v.to, log: v.log } : { ok: false, why: 'a ledger message carries a log' };
   if (v.t === 'sync') return validDoc(v.doc) ? { ok: true, t: 'sync', to: v.to, doc: v.doc } : { ok: false, why: 'a sync message carries a document' };
+  if (v.t === 'notes') return Array.isArray(v.notes) && v.notes.length >= 1 && v.notes.length <= MAX_NOTES ? { ok: true, t: 'notes', to: v.to, notes: v.notes } : { ok: false, why: 'a notes message carries 1 to ' + MAX_NOTES + ' notes' };
+  if (v.t === 'probe' || v.t === 'pong') return typeof v.id === 'string' && ID.test(v.id) ? { ok: true, t: v.t, to: v.to, id: v.id } : { ok: false, why: 'a ' + v.t + ' names its id' };
   return { ok: false, why: 'message type ' + String(v.t).slice(0, 24) + ' is not spoken here' };
+}
+
+/** One note inside a notes message, checked for shape. → { ok, kind, holder, skill, job[, packet] } | { ok: false, why }. Pure, total. */
+export function readNote(x) {
+  if (!isObj(x) || (x.kind !== 'silent' && x.kind !== 'lied')) return { ok: false, why: 'a note is silent or lied' };
+  if (typeof x.holder !== 'string' || !HEX64.test(x.holder)) return { ok: false, why: 'a note names the holder it is about' };
+  if (typeof x.skill !== 'string' || !SKILL.test(x.skill)) return { ok: false, why: 'a note names a skill' };
+  if (typeof x.job !== 'string' || !ID.test(x.job)) return { ok: false, why: 'a note names the ask it is about' };
+  if (x.kind === 'silent') return { ok: true, kind: 'silent', holder: x.holder, skill: x.skill, job: x.job };
+  if (typeof x.packet !== 'string' || x.packet.length > 2 * MAX_ANTIGEN_BYTES || !HEX.test(x.packet)) return { ok: false, why: 'a lied note carries the answer packet, in hex, up to ' + MAX_ANTIGEN_BYTES + ' bytes' };
+  return { ok: true, kind: 'lied', holder: x.holder, skill: x.skill, job: x.job, packet: x.packet };
 }
 
 /** JSON with sorted keys: one text for one value, so a digest of it is stable across the wire. */
@@ -143,7 +173,7 @@ export async function readCard(c) {
 /**
  * opts: { name, identity (identity.mjs makeIdentity), skills: { skill: async (input) => answer }, checks: { skill:
  * (answer) => bool | Promise }, budget (whole asks; default DEFAULT_BUDGET), genesis (a signed contribution-ledger genesis, or none), genome, clock,
- * docs (the shared documents this node keeps; default ['mesh']) }.
+ * docs (the shared documents this node keeps; default ['mesh']), routing ('shared', the default, or 'greedy': Phase 3's) }.
  */
 export async function createNode(opts) {
   const o = isObj(opts) ? opts : {};
@@ -152,10 +182,12 @@ export async function createNode(opts) {
   const name = typeof o.name === 'string' && o.name ? o.name.slice(0, 64) : 'node';
   const skills = isObj(o.skills) ? o.skills : {}, checks = isObj(o.checks) ? o.checks : {};
   const clock = typeof o.clock === 'function' ? o.clock : () => new Date();
+  const routing = o.routing === 'greedy' ? 'greedy' : 'shared';
   const wc = walletCrypto(me);
   const g = await W.genesis(wc, { caps: ['ask'], budget: Number.isSafeInteger(o.budget) && o.budget >= 0 ? o.budget : DEFAULT_BUDGET });
   const st = {
-    wallet: g.wallet, sk: g.sk, out: 0n, asks: 0,
+    wallet: g.wallet, sk: g.sk, out: 0n, asks: 0, probes: 0,
+    notes: [], noted: new Set(), probing: new Map(),
     peers: new Map(), pending: new Map(), served: new Map(), used: new Map(), retired: new Map(),
     library: emptyLibrary(), antigens: [], memory: new FallRemember(), ledger: L.empty(),
     seen: { admitted: 0, refused: 0, recognised: 0, sent: 0 },
@@ -267,14 +299,98 @@ export async function createNode(opts) {
     }
     match.inCounter = v.counter;
     st.seen.admitted++;
+    heardFrom(match);
     const m = readMessage(v.value);
     if (!m.ok) { remember('a pinned peer sent what is not a message: ' + m.why, { kind: 'junk', from: match.id, hash }); return { ok: false, stage: 'message', from: match.id, decoded: true, reason: m.why, replies: [] }; }
     if (m.to !== me.id) { remember('a packet from ' + match.name + ' addressed to another node', { kind: 'misaddressed', from: match.id, hash }); return { ok: false, stage: 'message', from: match.id, decoded: true, reason: 'addressed to another node', replies: [] }; }
     if (m.t === 'ask') return onAsk(m, match, hash);
-    if (m.t === 'answer') return onAnswer(m, match, hash);
+    if (m.t === 'answer') return onAnswer(m, match, hash, bytes);
     if (m.t === 'antibody') return onAntibody(m, match);
     if (m.t === 'sync') return onSync(m, match);
+    if (m.t === 'notes') return onNotes(m, match);
+    if (m.t === 'probe') return onProbe(m, match);
+    if (m.t === 'pong') return { ok: true, t: 'pong', from: match.id, id: m.id, replies: [] };   // heard from: that is the whole answer
     return onLedger(m, match);
+  }
+
+  /** A peer that speaks is alive: whatever silence this node held against it is over, and so are its probes. */
+  function heardFrom(p) {
+    if (p.quiet.size === 0) return;
+    p.quiet.clear();
+    for (const [id, q] of [...st.probing]) if (q.to === p.id) st.probing.delete(id);
+    remember(p.name + ' was heard from: no longer quiet', { kind: 'heard-from', peer: p.id });
+  }
+
+  // ── notes: what this node saw itself, and what it takes from others only after its own re-check ──
+  function keep(key) {
+    st.noted.add(key);
+    if (st.noted.size > MAX_NOTED) st.noted.delete(st.noted.values().next().value);
+  }
+  function note(n, key) {
+    st.notes.push(n);
+    if (st.notes.length > MAX_NOTES) st.notes.shift();
+    keep(key);
+  }
+  const check = async (skill, answer) => { try { return (await (typeof checks[skill] === 'function' ? checks[skill](answer) : receiptHolds(answer))) === true; } catch { return false; } };
+
+  async function probe(holder, skill) {
+    const id = 'probe:' + me.id.slice(0, 8) + ':' + (st.probes + 1);
+    const bytes = await say(holder.id, { t: 'probe', id });
+    if (bytes === null) return null;
+    st.probes++;
+    st.probing.set(id, { to: holder.id, skill });
+    return { to: holder.id, bytes };
+  }
+
+  /** One note from a pinned peer → 'adopted' | 'quiet' | 'already' | why it was refused. Never on the sender's word. */
+  async function takeNote(raw, author, replies) {
+    const n = readNote(raw);
+    if (!n.ok) return n.why;
+    if (n.holder === me.id) return 'a note about this node';
+    if (n.holder === author.id) return 'a note about its own sender';
+    const holder = st.peers.get(n.holder);
+    if (holder === undefined) return 'a note about a node this one has not pinned';
+    if (!holder.skills.includes(n.skill)) return 'the holder does not hold ' + n.skill;
+    if (n.kind === 'silent') {
+      const key = 'silent:' + author.id + ':' + n.job, seen = st.noted.has(key) || holder.quiet.has(n.skill);
+      keep(key);
+      if (seen) return 'already';
+      holder.quiet.add(n.skill);   // asks go elsewhere at once; the link moves only if this node's own probe goes unanswered
+      const p = await probe(holder, n.skill);
+      if (p !== null) replies.push(p);
+      return 'quiet';
+    }
+    const bytes = fromHex(n.packet), key = 'lied:' + hashOf(bytes);
+    const f = frame(bytes, {});   // a packet that does not frame names no sender, so it fails the first test
+    if (f.sender !== holder.slot || !(await verifyBytes(holder.id, f.signed, f.sig))) return 'the packet is not signed by the holder it accuses';
+    // the door's own reading of it, its signature checked just above; a body that does not decode reads as no message
+    const a = readMessage(open(bytes, { keyFor: () => holder.raw, verify: () => true, lastCounter: () => 0n }).value);
+    if (!a.ok || a.t !== 'answer' || a.to !== author.id || a.id !== n.job || a.skill !== n.skill) return 'the packet is not that holder’s answer to that ask of the sender’s';
+    // only now are these bytes this evidence and no other (the packet itself names its asker, ask and skill), so only
+    // now is it asked whether they were judged before, and only now are they remembered: a note that misnames them is
+    // refused by name, never waved through as a repeat, and cannot stop the true one being counted (Phase 3c)
+    if (st.noted.has(key)) return 'already';
+    keep(key);
+    if (a.answer.verdict !== 'VERIFIED') return 'an abstain is not a lie';
+    if (await check(a.skill, a.answer)) return 'the answer checks here';
+    holder.links.set(n.skill, hebb(holder.links.has(n.skill) ? holder.links.get(n.skill) : LINK.START, 'failed'));
+    return 'adopted';
+  }
+
+  async function onNotes(m, peer) {
+    const replies = [], r = { adopted: 0, quiet: 0, already: 0, refused: [] };
+    for (const raw of m.notes) {
+      const t = await takeNote(raw, peer, replies);
+      if (t === 'adopted' || t === 'quiet' || t === 'already') r[t]++;
+      else r.refused.push(t);
+    }
+    remember('took ' + m.notes.length + ' notes from ' + peer.name + ': ' + r.adopted + ' counted, ' + r.quiet + ' quiet pending a probe, ' + r.refused.length + ' refused', { kind: 'notes', from: peer.id, adopted: r.adopted, quiet: r.quiet, refused: r.refused.length });
+    return { ok: true, t: 'notes', from: peer.id, offered: m.notes.length, ...r, replies };
+  }
+
+  async function onProbe(m, peer) {
+    const bytes = await say(peer.id, { t: 'pong', id: m.id });
+    return { ok: true, t: 'probe', from: peer.id, id: m.id, replies: bytes ? [{ to: peer.id, bytes }] : [] };
   }
 
   async function onAsk(m, peer, hash) {
@@ -293,14 +409,18 @@ export async function createNode(opts) {
     return { ok: true, t: 'ask', from: peer.id, id: m.id, skill: m.skill, verdict: answer.verdict, why: answer.why, replies: bytes ? [{ to: peer.id, bytes }] : [] };
   }
 
-  async function onAnswer(m, peer, hash) {
+  async function onAnswer(m, peer, hash, bytes) {
     const p = st.pending.get(m.id);
     if (!p || p.to !== peer.id || p.skill !== m.skill) return { ok: false, stage: 'message', from: peer.id, decoded: true, reason: 'an answer to nothing this node asked that peer', replies: [] };
     st.pending.delete(m.id);
-    let checked = false;
-    if (m.answer.verdict === 'VERIFIED') { try { checked = (await (typeof checks[m.skill] === 'function' ? checks[m.skill](m.answer) : receiptHolds(m.answer))) === true; } catch { checked = false; } }
+    const checked = m.answer.verdict === 'VERIFIED' && (await check(m.skill, m.answer));
     const outcome = m.answer.verdict === 'ABSTAIN' ? 'abstain' : checked ? 'verified' : 'failed';
     peer.links.set(m.skill, hebb(peer.links.has(m.skill) ? peer.links.get(m.skill) : LINK.START, outcome));
+    peer.tried.add(m.skill);
+    // a receipt that does not check is kept as evidence the others can re-check: the holder's own signed answer (if it
+    // is small enough to carry; the bound is readNote's, so nothing is kept that a receiver would refuse for its size)
+    const lied = { kind: 'lied', holder: peer.id, skill: m.skill, job: m.id, packet: toHex(bytes) };
+    if (outcome === 'failed' && readNote(lied).ok) note(lied, 'lied:' + hash);
     remember(m.skill + ' answer from ' + peer.name + ': ' + outcome, { kind: 'answer', skill: m.skill, from: peer.id, job: m.id, outcome, hash });
     let recorded = false;
     if (outcome === 'verified') {
@@ -359,13 +479,16 @@ export async function createNode(opts) {
     const prev = st.peers.get(c.id);
     // a key pinned again after an unpin keeps its last counter, so nothing it sent before can be replayed
     const inCounter = prev ? prev.inCounter : st.retired.has(c.id) ? st.retired.get(c.id) : 0n;
-    st.peers.set(c.id, { id: c.id, raw: unhex(c.id), slot: c.slot, name: c.name, wallet: c.wallet, skills: c.skills.slice(), body: r.body, inCounter, links: prev ? prev.links : new Map() });
+    st.peers.set(c.id, { id: c.id, raw: unhex(c.id), slot: c.slot, name: c.name, wallet: c.wallet, skills: c.skills.slice(), body: r.body, inCounter,
+      links: prev ? prev.links : new Map(), tried: prev ? prev.tried : new Set(), quiet: prev ? prev.quiet : new Set() });
     const released = isObj(c.release) ? await record(c.release) : false;   // the ledger refuses a second release, or one with no genesis
     return { ok: true, id: c.id, released };
   }
 
   async function ask(skill, input) {
-    const peerList = [...st.peers.values()].map((p) => ({ id: p.id, skills: p.skills, weight: (s) => (p.links.has(s) ? p.links.get(s) : LINK.START) }));
+    // greedy routing tells choose nothing of tries or silence, so the strongest live link alone decides (Phase 3)
+    const told = (p) => (routing === 'shared' ? { tried: (s) => p.tried.has(s), quiet: (s) => p.quiet.has(s) } : {});
+    const peerList = [...st.peers.values()].map((p) => ({ id: p.id, skills: p.skills, weight: (s) => (p.links.has(s) ? p.links.get(s) : LINK.START), ...told(p) }));
     const pick = choose(peerList, skill);
     if (pick === null) return { ok: false, why: 'no pinned peer holds skill ' + skill };
     if (st.pending.size >= MAX_PENDING) return { ok: false, why: 'too many asks are waiting for an answer' };
@@ -375,8 +498,11 @@ export async function createNode(opts) {
     st.wallet = auth.wallet; st.asks++;
     const bytes = await say(pick.id, { t: 'ask', id, skill, input, token: auth.token });
     st.pending.set(id, { to: pick.id, skill });
-    return { ok: true, id, to: pick.id, live: pick.live, bytes };
+    return { ok: true, id, to: pick.id, live: pick.live, untried: pick.untried, bytes };
   }
+
+  /** This node's own notes, to one peer, as one signed message (as antibodies are shared). The receiver re-checks each. */
+  async function shareNotes(to) { return st.peers.has(to) && st.notes.length > 0 ? say(to, { t: 'notes', notes: st.notes }) : null; }
 
   async function shareAntibodies(to) {
     if (!st.peers.has(to) || st.antigens.length === 0) return null;
@@ -396,17 +522,33 @@ export async function createNode(opts) {
     st.retired.set(id, p.inCounter);
     let dropped = 0;
     for (const [job, q] of [...st.pending]) if (q.to === id) { st.pending.delete(job); dropped++; }
+    for (const [job, q] of [...st.probing]) if (q.to === id) st.probing.delete(job);
     remember('unpinned ' + p.name + ': no longer trusted', { kind: 'unpinned', peer: id, dropped });
     return { ok: true, id, dropped };
   }
 
-  /** An ask nobody answered, given up: it counts as a failed answer, so a peer that died is routed around. */
+  /**
+   * An ask nobody answered, given up: it counts as a failed answer, the peer is quiet here until it is heard from, and
+   * this node writes a 'silent' note for the others. A probe nobody answered, given up: this node's own evidence of a
+   * silence it was told of, so only now does its link fall.
+   */
   function expire(id) {
+    const q = st.probing.get(id);
+    if (q !== undefined) {
+      st.probing.delete(id);
+      const holder = st.peers.get(q.to);
+      holder.links.set(q.skill, hebb(holder.links.has(q.skill) ? holder.links.get(q.skill) : LINK.START, 'failed'));
+      remember('probe ' + id + ' to ' + holder.name + ' expired unanswered', { kind: 'probe-expired', to: q.to, skill: q.skill, job: id });
+      return { ok: true, to: q.to, skill: q.skill, weight: holder.links.get(q.skill), probe: true };
+    }
     const p = st.pending.get(id);
     if (p === undefined) return { ok: false, why: 'no ask ' + String(id).slice(0, 40) + ' is waiting' };
     st.pending.delete(id);
     const peer = st.peers.get(p.to);
     peer.links.set(p.skill, hebb(peer.links.has(p.skill) ? peer.links.get(p.skill) : LINK.START, 'failed'));
+    peer.tried.add(p.skill);
+    peer.quiet.add(p.skill);
+    note({ kind: 'silent', holder: p.to, skill: p.skill, job: id }, 'silent:' + me.id + ':' + id);
     remember('ask ' + id + ' to ' + peer.name + ' expired unanswered', { kind: 'expired', to: p.to, skill: p.skill, job: id });
     return { ok: true, to: p.to, skill: p.skill, weight: peer.links.get(p.skill) };
   }
@@ -438,10 +580,14 @@ export async function createNode(opts) {
   }
 
   return Object.freeze({
-    id: me.id, name, slot: me.slot,
+    id: me.id, name, slot: me.slot, routing,
     card: () => card,
-    pin, unpin, hear, ask, shareAntibodies, shareLedger, vault, expire, setShared, shareSync,
+    pin, unpin, hear, ask, shareAntibodies, shareLedger, vault, expire, setShared, shareSync, shareNotes,
     pinned: () => [...st.peers.keys()].sort(),
+    notes: () => st.notes.map((n) => ({ ...n })),
+    probing: () => [...st.probing.keys()],
+    quiet: (peer, skill) => { const p = st.peers.get(peer); return p !== undefined && p.quiet.has(skill); },
+    tried: (peer, skill) => { const p = st.peers.get(peer); return p !== undefined && p.tried.has(skill); },
     shared: (docId) => (st.docs.has(docId) ? valueOf(st.docs.get(docId)) : null),
     sharedDoc: (docId) => (st.docs.has(docId) ? st.docs.get(docId) : null),
     pending: () => [...st.pending.keys()],
@@ -452,7 +598,8 @@ export async function createNode(opts) {
     library: () => st.library,
     antigens: () => st.antigens.slice(),
     budget: () => ({ spent: st.wallet.budget.spent, total: st.wallet.budget.total }),
-    stats: () => ({ ...st.seen, peers: st.peers.size, pending: st.pending.size, antibodies: Object.keys(st.library.exact).length, shapes: st.library.shapes.length, memory: st.memory.size, entries: st.ledger.log.length }),
+    stats: () => ({ ...st.seen, peers: st.peers.size, pending: st.pending.size, antibodies: Object.keys(st.library.exact).length, shapes: st.library.shapes.length, memory: st.memory.size, entries: st.ledger.log.length,
+      notes: st.notes.length, probing: st.probing.size, quiet: [...st.peers.values()].reduce((k, p) => k + p.quiet.size, 0) }),
   });
 }
 

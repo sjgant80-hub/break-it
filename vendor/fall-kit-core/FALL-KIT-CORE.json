@@ -1,13 +1,13 @@
 {
  "kind": "fall-kit.core.vendored",
- "from": "https://github.com/sjgant80-hub/fall-kit/tree/cbb17a6789db4db82792afe9ac96a28d7fdb0dee/core",
- "commit": "cbb17a6789db4db82792afe9ac96a28d7fdb0dee",
+ "from": "https://github.com/sjgant80-hub/fall-kit/tree/b6dab1fe179bc217349582b5296c92989dc65d45/core",
+ "commit": "b6dab1fe179bc217349582b5296c92989dc65d45",
  "note": "The estate’s shared foundation, copied verbatim. Never edit; re-vendor with fall-kit’s core/tools/vendor-into.mjs.",
  "files": {
   "antibody.mjs": "cb507411787cc6bb07891acd24c5d9ee8de85b762706205154fe9ac1d6dd1514",
   "edge.mjs": "35d1bfa10a37ec4ea9d45b2724f7a0decd96f506266c877946cc173126f39125",
   "identity.mjs": "429caa25bf0e104f6a664224d81fd8215d2f6c79aad3323a8acb476f85a3856e",
-  "node.mjs": "07ae10354d0461679c250b6adf04802293d79796cc544d7f16e0a0287793453a",
+  "node.mjs": "efcb8e5deb9cac6e051050926725e3feab7e428cbd4a67c21ceba951c59db5e7",
   "relay.mjs": "e91e88a01ec3340c02e41e1b03df208a6af4d224aeea6275a70965646ce89c21",
   "roster.mjs": "1e2af608378f1b93fe5b50215ce46b395739474766071b61e67dbc43ef0919e1",
   "vendor/SOURCES.json": "63048d45a7669d204ad88e88a703ba97e48d33d1576a6390c2af67175b353d84",
