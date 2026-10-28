@@ -25,7 +25,7 @@ import { immuneStage, features, mint, adopt, recognise, emptyLibrary, PERMANENT 
 import { openChain, sha256hex } from './ledger.mjs';
 import { openJournal } from './journal.mjs';
 import { makeApp } from './app.mjs';
-import { makeReferee } from './referee.mjs';
+import { makeReferee, grammarOk } from './referee.mjs';
 import { keyTable, signWith, rawPublic, publicFromRaw } from './keys.mjs';
 import { mintRune, questLog } from './loot.mjs';
 import { difficultyFor, challenge, verifyWork } from './rebound.mjs';
@@ -33,6 +33,7 @@ import { appendFileSync, readFileSync as readText, existsSync as exists } from '
 import { verify as edVerify } from 'node:crypto';
 import { prepare as lightPrepare, finish as lightFinish, open as lightOpen, KINDS as LIGHT_KINDS } from '../vendor/light/packet.mjs';
 import { meshOrder, antigensToBytes, bytesToAntigens, nextCounter } from './share.mjs';
+import { evidence, door } from './patch.mjs';
 
 export const LIMITS = Object.freeze({ rate: 300, burst: 600, queue: 1024, shareBytes: 65536, shareAntigens: 64, shareEveryMs: 250, ipTable: 10000 });
 const hexOf = (u8) => Buffer.from(u8).toString('hex');
@@ -93,6 +94,16 @@ export async function startNode(opts) {
   if (!ledger.ok) throw new Error(ledger.reason);
   const counters = new Map(), senders = new Map(), app = makeApp(), referee = makeReferee(), packets = [], admittedHashes = new Set();
   const ctx = { keyFor: keys.keyFor, verify: keys.verify, lastCounter: (s) => counters.get(s) || 0n };
+  // the herd patch (patch.mjs): off until a zero-day is PROVEN on this node — by its own referee, by its own ledger, or by
+  // re-checking a peer's evidence itself. Then the referee's independent grammar is a stage of this node's door.
+  const herdPatch = o.herdPatch !== false;
+  let patch = { on: false, by: null, at: null, why: null };
+  const proven = (bytes, by, why) => { if (!herdPatch || patch.on) return false; patch = { on: true, by, at: new Date(now()).toISOString(), why }; log('PATCHED — the referee’s grammar is now a door stage: ' + why); return true; };
+  // the node’s whole door: the gate, then (once patched) the independent grammar — what “would this node admit it” means
+  // the gate accepts a packet's FORM when it admits it or refuses it only for its counter (stale): size, magic, schema,
+  // sender and signature all passed. A zero-day shared after this node moved on is still evidence; a forgery never is.
+  const accepts = (v) => v.admit === true || v.stage === 'counter';
+  const doorOf = (bytes) => { const v = decide(bytes, ctx); if (!v.admit) return v; const shut = door(patch.on, grammarOk(bytes)); return shut ? { admit: false, stage: shut.stage, reason: shut.reason } : v; };
   for (const e of ledger.entries) {
     const bytes = new Uint8Array(Buffer.from(e.packet, 'hex'));
     const v = decide(bytes, ctx);
@@ -101,13 +112,14 @@ export async function startNode(opts) {
     senders.set(v.msg.sender, s.state);
     counters.set(v.msg.sender, v.msg.counter);
     app.apply(v.msg); referee.after(v.msg, bytes); packets.push(bytes); admittedHashes.add(bytesHash(bytes));
+    if (evidence(true, grammarOk(bytes))) proven(bytes, 'ledger', 'its own ledger holds a packet its gate admitted and the independent grammar rejects (entry ' + e.seq + ')');
   }
 
   // ── immunity, rebuilt from the journal: memory from every record; antibodies re-minted by re-running each antigen
   const journal = openJournal(o.journalPath);
   let memory = emptyMemory(), library = emptyLibrary();
   const relearn = (bytes, family) => {
-    const v = decide(bytes, ctx);
+    const v = doorOf(bytes);
     if (v.admit) return { added: 0 };                              // valid NOW: never an antibody (no autoimmunity)
     const stage = immuneStage(v);
     const ab = mint(bytes, { hash: bytesHash(bytes), stage, keyset: keys.keyset, family });
@@ -119,6 +131,13 @@ export async function startNode(opts) {
   const reboundCount = new Map();                               // GATE-refusals per source — drives the cost law (rebound.mjs)
   const owed = (source) => difficultyFor(reboundCount.get(source) || 0);
   const charge = (source) => { if (source && !String(source).startsWith('peer:')) reboundCount.set(source, (reboundCount.get(source) || 0) + 1); };
+  // the patch's evidence, written down; on restart it is re-checked here, never trusted (patch.mjs)
+  const keepPatch = (bytes) => journal.record({ at: new Date(now()).toISOString(), source: patch.by, stage: 'patch', reason: patch.why, family: 'zero-day', print: 'patch|zero-day', novel: true, detail: 'full', bytes, context: { keyset: keys.keyset } });
+  for (const r of journal.records) {
+    if (r.stage !== 'patch' || !r.bytes || r.bytes.length !== r.size * 2) continue;
+    const b = new Uint8Array(Buffer.from(r.bytes, 'hex'));
+    if (evidence(accepts(decide(b, ctx)), grammarOk(b))) proven(b, 'journal', 'its own journal’s evidence, re-checked at start: ' + r.reason);
+  }
   for (const r of journal.records) {
     memory = learn(memory, { family: r.family, print: r.print, source: r.source }).memory;
     if (r.stage === 'behavior' && r.context && r.context.blocked === true && Number.isInteger(r.context.sender)) blocked.add(r.context.sender);
@@ -126,7 +145,7 @@ export async function startNode(opts) {
     if (r.detail === 'full' && r.bytes && r.size <= MAX_PACKET && r.bytes.length === r.size * 2) relearn(new Uint8Array(Buffer.from(r.bytes, 'hex')), r.family);
   }
 
-  const stats = { admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0,
+  const stats = { admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0, patchRefused: 0, zeroDayEvidence: 0,
     light: { sent: 0, received: 0, admitted: 0, decoded: 0, refused: {} } };   // LIGHT shares: decoded counts every time the door let the decoder run
   // the loot: Legendary runes (signed, persisted), Epic autoimmune events
   const lootPath = o.lootPath || null;
@@ -231,7 +250,7 @@ export async function startNode(opts) {
     const seen = recognise(library, hash, null, keys.keyset);
     // belt and braces: an on-sight drop is checked against the gate. If the gate would ADMIT these bytes, an
     // antibody has turned on the body — the gate is the authority, so the packet goes on, and the Epic drops.
-    if (seen.drop && decide(bytes, ctx).admit) {
+    if (seen.drop && doorOf(bytes).admit) {
       stats.autoimmune++;
       const epic = { tier: 'EPIC', name: 'Autoimmune', at: new Date(now()).toISOString(), source, packet: hexOf(bytes), family: seen.family };
       epics.push(epic); keepLoot(epic);
@@ -259,9 +278,10 @@ export async function startNode(opts) {
         return { code: 402, body: { rebound: true, stage: 'rebound', reason: 'this source owes proof-of-work (' + bits + ' bits) — it has been refused ' + (reboundCount.get(source) || 0) + ' times', challenge: chal, bits, epoch } };
       }
     }
-    const v = decide(bytes, ctx);
+    const v = doorOf(bytes);
     if (!v.admit) {
       stats.refused++; charge(source);
+      if (v.reason === door(true, false).reason) stats.patchRefused++;
       const exactReplay = v.stage === 'counter' && admittedHashes.has(hash);
       const a = antigen(bytes, v, source, { exactReplay });
       return { code: 403, body: { dropped: true, stage: v.stage, reason: v.reason, ...a } };
@@ -284,6 +304,7 @@ export async function startNode(opts) {
     const breach = referee.after(v.msg, bytes);
     if (breach) {
       stats.breaches++;
+      if (evidence(true, grammarOk(bytes)) && proven(bytes, 'self', 'its own referee: ' + breach.why)) keepPatch(bytes);
       // a zero-day: the gate let something through. The packet becomes an antigen at once, everywhere.
       const ab = mint(bytes, { hash, stage: 'replay', keyset: keys.keyset, family: 'breach' });
       library = adopt(library, [ab.exact, ab.shape].filter(Boolean)).library;
@@ -340,7 +361,9 @@ export async function startNode(opts) {
   function adoptAntigens(list, from) {
     let adopted = 0;
     for (const bytes of list) {
-      const v = decide(bytes, ctx);                                // re-run on THIS node's gate — never take a peer's word
+      let v = decide(bytes, ctx);                                  // re-run on THIS node's gate — never take a peer's word
+      if (evidence(accepts(v), grammarOk(bytes)) && proven(bytes, 'peer:' + from.slice(0, 16), 'a peer’s antigen re-checked here: this gate accepts its form, the independent grammar rejects it')) { stats.zeroDayEvidence++; keepPatch(bytes); }
+      if (v.admit) v = doorOf(bytes);                             // once patched, the door refuses what the grammar rejects
       if (v.admit) continue;                                      // valid here: adopting it would be autoimmunity
       const stage = immuneStage(v);
       if (!PERMANENT.includes(stage)) continue;
@@ -396,7 +419,7 @@ export async function startNode(opts) {
       }
       if (url.pathname === '/immune') {
         return sendJson(res, 200, {
-          stats, events: memory.events, novel: memory.novel, families: memory.families,
+          stats, patch, events: memory.events, novel: memory.novel, families: memory.families,
           sources: Object.fromEntries(Object.entries(memory.sources).map(([s, n]) => [s, { refusals: n, standing: standing(memory, s) }])),
           antibodies: { exact: Object.keys(library.exact).length, shapes: library.shapes.length },
           rebound: { epochMs: REBOUND_EPOCH_MS, owed: Object.fromEntries([...reboundCount].map(([src, n]) => [src, { refusals: n, bits: difficultyFor(n) }])) },
@@ -424,7 +447,7 @@ export async function startNode(opts) {
   log('break-it node on http://' + host + ':' + port + ' — ledger ' + ledger.length + ', journal ' + journal.length + ', antibodies ' + library.size);
   return {
     port, url: 'http://' + host + ':' + port, node: nodePub,
-    stats, get library() { return library; }, get memory() { return memory; }, referee, app,
+    stats, get patch() { return patch; }, get library() { return library; }, get memory() { return memory; }, referee, app,
     close: () => new Promise((r) => { if (flushTimer) clearTimeout(flushTimer); server.close(() => { ledger.close(); journal.close(); r(); }); server.closeAllConnections?.(); }),
   };
 }

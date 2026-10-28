@@ -46,6 +46,7 @@ export const PAIRS = [
   ['src/loot.mjs', ['test/loot.test.mjs', 'test/fuzz.test.mjs']],
   ['src/cost.mjs', ['test/cost.test.mjs']],
   ['src/feed.mjs', ['test/feed.test.mjs']],
+  ['src/patch.mjs', ['test/patch.test.mjs']],
   ['pilot/judge.mjs', ['test/pilot.test.mjs']],
 ];
 
