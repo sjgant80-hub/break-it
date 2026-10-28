@@ -329,6 +329,35 @@ async function loadReceipt() {
   cost();
 }
 
+// ── the herd: a planted zero-day lands once, then every node patches itself (receipts/herd.json) ─────────────────
+const HERD_ROLES = [['CISO', 'CISO: it holds'], ['CTO', 'CTO: it is sound'], ['COO', 'COO: the work goes on']];
+async function loadHerd() {
+  let h = null;
+  try { h = await (await fetch('receipts/herd.json')).json(); } catch { h = null; }
+  if (!h || !Array.isArray(h.verdicts) || !h.facts) { $('herd-roles').textContent = 'The herd’s receipt (receipts/herd.json) did not load.'; return; }
+  const f = h.facts, t = f.timing || {}, ms = Array.isArray(t.patchMs) ? t.patchMs : [], door = (o) => (o && o['schema (door)']) || 0;
+  $('hd-sum').textContent = h.held + ' of ' + h.verdicts.length + ' sealed claims held' + (h.failed ? ', ' + h.failed + ' failed (kept)' : '') + '.';
+  $('herd-roles').innerHTML = HERD_ROLES.map(([role, title]) => '<div class="role"><h4>' + esc(title) + '</h4>' + h.verdicts.filter((v) => v.role === role).map((v) =>
+    '<div class="claim"><span class="tagx ' + (v.held ? 'held">HELD' : 'failed">FAILED') + '</span><b>' + esc(v.id) + '</b> ' + esc(v.claim) + '<div class="measured">measured: ' + esc(v.measured) + '</div></div>').join('') + '</div>').join('');
+  const rows = [
+    ['the zero-day, without the herd patch', n0(f.h2.breaches) + ' of ' + n0(f.h2.sent) + ' nodes breached'],
+    ['the zero-day, with the herd patch', n0(f.h3.breaches) + ' breach in the whole herd'],
+    ['peers closed after the landing', ms.map((x) => n0(x) + ' ms').join(', ')],
+    ['variants sent after the landing', n0(f.h4.sent) + ' · ' + n0(door(f.h4.outcomes)) + ' refused at the door'],
+    ['genuine records after the patch', n0(f.h6.sent) + ' sent · ' + n0((f.h6.outcomes || {}).admitted || 0) + ' admitted · books equal on ' + (f.h6.booksMatch || []).filter((x) => x === true).length + ' of ' + (f.h6.booksMatch || []).length + ' nodes'],
+    ['a malicious peer’s false reports', n0(f.h5.patched) + ' nodes patched'],
+    ['after a restart', (f.h7.restarted || []).map((r) => 'node ' + r.node + ': patch re-proven from its ' + r.by).join(' · ')],
+    ['genuine records a second (one node at a time)', n0(t.genuinePerSecond)],
+    ['rate-limit answers, retried', n0((t.retried || {}).rate || 0)],
+  ];
+  $('herd-facts').innerHTML = rows.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td class="mono">' + esc(v) + '</td></tr>').join('');
+  $('herd-seal').innerHTML = '<a href="https://github.com/sjgant80-hub/break-it/commit/' + esc(h.sealed.commit) + '">' + esc(h.sealed.path) + ' @ ' + esc(h.sealed.commit.slice(0, 7)) + '</a>';
+  $('dh-once').textContent = 'landed ' + n0(f.h3.breaches) + '× in the herd (' + n0(f.h2.breaches) + '× without the patch)';
+  $('dh-ms').textContent = ms.length ? Math.max(...ms) + ' ms' : '—';
+  $('dh-var').textContent = n0(door(f.h4.outcomes)) + ' of ' + n0(f.h4.sent) + ' variants refused';
+  $('dh-gen').textContent = n0((f.h6.outcomes || {}).admitted || 0) + ' genuine admitted';
+}
+
 // ── the blueprint's mutation scores, from the gate's own receipt ──────────────────────────────────────────────
 async function loadWitness() {
   let w = null;
@@ -392,7 +421,7 @@ $('send').addEventListener('click', async () => {
 });
 
 (async function boot() {
-  renderRebound(); renderVectors(); loadSources(); loadReceipt(); loadWitness();
+  renderRebound(); renderVectors(); loadSources(); loadReceipt(); loadHerd(); loadWitness();
   try {
     const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, false, ['sign', 'verify']);
     feedKey = kp.privateKey;

@@ -5,6 +5,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }                  # the herd check finds the commit that sealed its claims
       - uses: actions/setup-node@v4
         with: { node-version: '20' }
 
@@ -21,6 +22,9 @@ jobs:
 
       - name: the Liveware Pilot's receipt re-checked (ledger and books re-derived from the feed, the judge re-run, a real node on 3,000 records)
         run: node pilot/check.mjs
+
+      - name: the herd — a planted zero-day lands once, then every node patches itself from the evidence; five real nodes re-run, the seven sealed claims re-judged (timings aside)
+        run: node herd/measure.mjs --check
 
       - name: mutation + fuzz gate over every decision kernel (no unreviewed survivors); its receipt must come out byte-for-byte the same
         run: node witness-all.mjs --receipt && git diff --exit-code -- receipts/witness.json

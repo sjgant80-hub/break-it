@@ -122,7 +122,9 @@ async function flawed() {
     for (const rec of FEED.slice(PREFIX, PREFIX + GENUINE)) { const r = outcome(await send(h.nodes[i].url, packetFor(ci, rec))); g6.push(r); if (r === 'admitted') held[i].push(rec); }
   }
   const booksMatch = h.nodes.map((n, i) => booksHash(n.app.state()) === booksHash(books(held[i])));
-  facts.h6 = { sent: g6.length, outcomes: tally(g6), booksMatch, refusalsPerNodeMax: Math.max(...h.nodes.map((n) => n.stats.refused)) };
+  facts.h6 = { sent: g6.length, outcomes: tally(g6), booksMatch };
+  // the most refusals any node answered, rate-limit answers (429, retried) included: it moves with speed, so it is a timing
+  const refusalsPerNodeMax = Math.max(...h.nodes.map((n) => n.stats.refused));
   const rate = Math.round(g6.length / ((Date.now() - t6) / 1000));
 
   // h-7: node 1 (took the landing) and node 2 (patched by a peer's evidence) closed and started again on their own files
@@ -156,7 +158,7 @@ async function flawed() {
     facts.h5 = { shareStatus: tally(shares.map(String)), patched: h5.nodes.filter((n) => n.patch.on).length, nextGenuine: tally(still) };
     await h5.close(); }
 
-  facts.timing = { patchMs: facts.h3.peers.map((p) => p.patchedAfterMs), genuinePerSecond: rate, retried };
+  facts.timing = { patchMs: facts.h3.peers.map((p) => p.patchedAfterMs), genuinePerSecond: rate, retried, refusalsPerNodeMax };
   return facts;
 }
 

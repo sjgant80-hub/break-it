@@ -1,0 +1,174 @@
+{
+ "kind": "break-it.herd.receipt",
+ "v": 1,
+ "sealed": {
+  "path": "herd/claims.json",
+  "commit": "851d32deed378e8200ee4247fa4c5a5308b58ee0",
+  "claimsSha256": "3b499a704b6beaae0213306a5b5275aa78b2c86c7b27cfcec26e2d4036c86c44",
+  "measuringCodeCommittedAtSeal": false
+ },
+ "facts": {
+  "h1": {
+   "sent": 5,
+   "outcomes": {
+    "schema": 5
+   },
+   "breaches": 0
+  },
+  "h2": {
+   "sent": 5,
+   "outcomes": {
+    "admitted": 5
+   },
+   "breaches": 5,
+   "patched": 0
+  },
+  "h3": {
+   "first": "admitted",
+   "node1": {
+    "patch": true,
+    "by": "self"
+   },
+   "peers": [
+    {
+     "node": 2,
+     "patchedAfterMs": 19,
+     "by": "peer",
+     "same": "recognised"
+    },
+    {
+     "node": 3,
+     "patchedAfterMs": 19,
+     "by": "peer",
+     "same": "recognised"
+    },
+    {
+     "node": 4,
+     "patchedAfterMs": 19,
+     "by": "peer",
+     "same": "recognised"
+    },
+    {
+     "node": 5,
+     "patchedAfterMs": 19,
+     "by": "peer",
+     "same": "recognised"
+    }
+   ],
+   "breaches": 1
+  },
+  "h4": {
+   "sent": 100,
+   "outcomes": {
+    "schema (door)": 100
+   },
+   "breaches": 1
+  },
+  "h6": {
+   "sent": 15000,
+   "outcomes": {
+    "admitted": 15000
+   },
+   "booksMatch": [
+    true,
+    true,
+    true,
+    true,
+    true
+   ]
+  },
+  "h7": {
+   "restarted": [
+    {
+     "node": 1,
+     "patch": true,
+     "by": "ledger",
+     "variant": "schema (door)"
+    },
+    {
+     "node": 2,
+     "patch": true,
+     "by": "journal",
+     "variant": "schema (door)"
+    }
+   ]
+  },
+  "h5": {
+   "shareStatus": {
+    "200": 4
+   },
+   "patched": 0,
+   "nextGenuine": {
+    "admitted": 5
+   }
+  },
+  "timing": {
+   "patchMs": [
+    19,
+    19,
+    19,
+    19
+   ],
+   "genuinePerSecond": 374,
+   "retried": {
+    "rate": 280,
+    "reset": 0
+   },
+   "refusalsPerNodeMax": 89
+  }
+ },
+ "steadySha256": "7c604b7c4a5f35a86d7c194cd12989410234c727e6ac3f128852d8b2cb641784",
+ "held": 7,
+ "failed": 0,
+ "verdicts": [
+  {
+   "id": "h-1",
+   "role": "CISO",
+   "claim": "The planted flaw is the only way in: with break-it's real gate, the zero-day packet is refused at the schema stage by all five nodes.",
+   "measured": "the shipped gate, 5 nodes: 5 schema; breaches 0",
+   "held": true
+  },
+  {
+   "id": "h-2",
+   "role": "CTO",
+   "claim": "Without the herd patch (break-it as it was before this change), the zero-day lands once on every node it reaches: five of five.",
+   "measured": "no herd patch, 5 nodes: 5 admitted; breaches 5; patched 0",
+   "held": true
+  },
+  {
+   "id": "h-3",
+   "role": "CISO",
+   "claim": "With the herd patch, the zero-day lands exactly once in the whole herd: on the first node it reaches. Every other node switches the independent grammar on as a door stage from evidence it re-checks itself, within two seconds of that landing.",
+   "measured": "node 1: admitted (patched by self); node 2 patched by peer after 19 ms, then the same packet: recognised; node 3 patched by peer after 19 ms, then the same packet: recognised; node 4 patched by peer after 19 ms, then the same packet: recognised; node 5 patched by peer after 19 ms, then the same packet: recognised; breaches across the herd 1",
+   "held": true
+  },
+  {
+   "id": "h-4",
+   "role": "CISO",
+   "claim": "Mutation does not get round it: twenty variants of the zero-day (the same shape, other accounts and amounts) sent to all five nodes after the first landing — none lands.",
+   "measured": "100 variants after the first landing: 100 schema (door); breaches across the herd still 1",
+   "held": true
+  },
+  {
+   "id": "h-5",
+   "role": "CTO",
+   "claim": "No false patch: a peer that shares a genuine record as if it were an attack, and a peer that shares bytes the gate refuses, patch no node — a patch needs the evidence itself.",
+   "measured": "shares delivered 4 200; nodes patched 0; the next genuine record: 5 admitted",
+   "held": true
+  },
+  {
+   "id": "h-6",
+   "role": "COO",
+   "claim": "The patch costs genuine traffic nothing: after the herd is patched, every node admits the next 3,000 genuine payment records of the feed, and its books equal the feed.",
+   "measured": "15000 genuine records to the patched nodes: 15000 admitted; books equal to the records held on 5 of 5 nodes",
+   "held": true
+  },
+  {
+   "id": "h-7",
+   "role": "CTO",
+   "claim": "A patch survives a restart and is re-proven, not trusted: the node that took the landing restarts patched from its own ledger, and a node patched by a peer's evidence restarts patched from the evidence in its journal, re-checked at start; both still refuse the zero-day's variants.",
+   "measured": "node 1 restarted: patch on by ledger, a fresh variant schema (door); node 2 restarted: patch on by journal, a fresh variant schema (door)",
+   "held": true
+  }
+ ]
+}

@@ -29,7 +29,7 @@
 <header class="top"><div class="wrap">
   <a class="brand" href="#top">BREAK<b>IT</b></a>
   <nav class="links" aria-label="Sections">
-    <a href="#start">Start here</a><a href="#live">Live defence</a><a href="#pilot">Pilot receipts</a><a href="#cfo">Cost case</a>
+    <a href="#start">Start here</a><a href="#live">Live defence</a><a href="#pilot">Pilot receipts</a><a href="#herd">The herd</a><a href="#cfo">Cost case</a>
     <a href="#how">How it works</a><a href="#blueprint">Blueprint</a><a href="#redteam">Break it</a><a href="#business">For your business</a>
     <a href="#paper">White paper</a><a href="#faq">FAQ</a>
   </nav>
@@ -170,6 +170,41 @@
   <div class="callout"><b>The CISO’s two claims, read straight.</b> ciso-1 was sealed as “0 DNS lookups”. The node makes one: when it starts, Node’s own listen() passes the address it binds to, the literal 127.0.0.1, through dns.lookup. Node answers an IP literal itself, and no resolver is asked. The claim as sealed counts the call, so it fails and stays failed. ciso-3 was sealed after that look and before the full run, and measures what a CISO needs to know: once the node is listening, it makes no outbound attempt of any kind.</div>
   <h3>The CFO’s receipt</h3>
   <p>The cost case is arithmetic, not a prediction, so it is not sealed. Its one measured input is the records a second one node sustained in this pilot. Run it with your figures in the next section.</p>
+</section>
+
+<section id="herd" aria-labelledby="herd-h">
+  <h2 id="herd-h"><small>The herd · living defence</small>A zero-day lands once. Then every node closes the hole itself</h2>
+  <p class="intro">Every defence has a flaw nobody has found yet. When an attacker finds one in the gate, the same flaw is in every node, because every node runs the same code. Before this change, a breached node shared the attack with its peers, but a peer will not refuse bytes its own gate admits (no defence may ever turn on genuine traffic), so the same attack landed once on every node. Now the herd shares the proof instead. <span id="hd-sum" class="mono"></span></p>
+  <div class="diagram">
+    <svg viewBox="0 0 1040 250" role="img" aria-labelledby="dh-t">
+      <title id="dh-t">A zero-day lands on node 1; its referee flags it; node 1 shares the packet; each peer re-checks it with its own gate and its own grammar; every node then refuses the packet and its variants at the door</title>
+      <g class="d-arrows">
+        <path d="M150 120 H182" marker-end="url(#ar)"/><path d="M360 120 H392" marker-end="url(#ar)"/><path d="M590 120 H622" marker-end="url(#ar)"/><path d="M830 120 H862" marker-end="url(#ar)"/>
+      </g>
+      <g class="d-text">
+        <rect x="10" y="80" width="140" height="80" rx="8" class="d-box d-pink"/><text x="80" y="106" text-anchor="middle" class="d-pink">a zero-day</text><text x="80" y="126" text-anchor="middle" class="d-dim">the gate lets it in</text><text x="80" y="144" text-anchor="middle" class="d-dim">on node 1, once</text>
+        <rect x="182" y="80" width="178" height="80" rx="8" class="d-box d-line"/><text x="271" y="106" text-anchor="middle">node 1’s referee</text><text x="271" y="126" text-anchor="middle" class="d-dim">its own grammar says no:</text><text x="271" y="144" text-anchor="middle" class="d-dim">a breach, written down</text>
+        <rect x="392" y="80" width="198" height="80" rx="8" class="d-box d-purp"/><text x="491" y="106" text-anchor="middle" class="d-purp">the proof travels</text><text x="491" y="126" text-anchor="middle" class="d-dim">the packet itself, signed,</text><text x="491" y="144" text-anchor="middle" class="d-dim">to every peer at once</text>
+        <rect x="622" y="70" width="208" height="100" rx="10" class="d-box d-blue d-thick"/><text x="726" y="94" text-anchor="middle" class="d-blue" font-weight="700">each peer checks it itself</text><text x="726" y="116" text-anchor="middle">its gate accepts the form</text><text x="726" y="134" text-anchor="middle">and its grammar rejects it?</text><text x="726" y="156" text-anchor="middle" class="d-dim">then, and only then</text>
+        <rect x="862" y="80" width="168" height="80" rx="8" class="d-box d-blue"/><text x="946" y="106" text-anchor="middle" class="d-blue">the door closes</text><text x="946" y="126" text-anchor="middle" class="d-dim">the packet and every</text><text x="946" y="144" text-anchor="middle" class="d-dim">variant, on every node</text>
+        <text x="10" y="40" class="d-dim">measured on five real nodes: <tspan id="dh-once">—</tspan> · peers closed in <tspan id="dh-ms">—</tspan> · <tspan id="dh-var">—</tspan> · <tspan id="dh-gen">—</tspan></text>
+        <text x="622" y="214" class="d-dim">a genuine record passes both checks, so it proves nothing and patches nothing</text>
+      </g>
+    </svg>
+  </div>
+  <ol class="steps">
+    <li><b>It lands once.</b> A packet the gate admits reaches the app. The referee checks every admitted message with its own grammar, written apart from the gate, and this one breaks it: a breach.</li>
+    <li><b>The proof travels.</b> The node switches its referee’s grammar on as a stage of its door, writes the packet to its journal, and shares it with its peers, signed, at once.</li>
+    <li><b>Each peer checks it itself.</b> A peer takes nobody’s word for it. It runs the packet through its own gate and its own grammar. Only if its gate accepts the packet’s form and its grammar rejects it, a zero-day proven on the peer itself, does it switch the grammar on too.</li>
+    <li><b>The hole closes for the whole family.</b> From then on every node refuses at its door anything its grammar rejects: the same packet, and every variant of it.</li>
+    <li><b>Nothing genuine pays for it.</b> A genuine record passes both checks, so it is admitted as before. A peer that shares a genuine record as if it were an attack proves nothing and patches nothing. The proof is kept in each node’s journal and checked again at every restart.</li>
+  </ol>
+  <h3>Measured, sealed first, on five real nodes</h3>
+  <p>To measure what the herd does with a zero-day, we planted one: in the measuring process alone, a module hook loads the gate with its period limit off by one, so it accepts period 1200, a month past its limit. The shipped gate is untouched. The attack is the attack kit’s own out-of-range record, signed with the ingest key: the stolen-key case. Five nodes, as <span class="mono">node run.mjs</span> starts them, each pinning the other four, over loopback HTTP. The claims were committed before any measuring code existed.</p>
+  <div class="verdicts" id="herd-roles">loading receipts/herd.json…</div>
+  <div class="tablewrap"><table><tbody id="herd-facts"></tbody></table></div>
+  <p>Seal: <span id="herd-seal"></span>. Receipt: <a href="receipts/herd.json">receipts/herd.json</a>. Re-run it yourself: <span class="mono">node herd/measure.mjs</span> (under a minute). CI runs <span class="mono">node herd/measure.mjs --check</span> on every push, and every claim must come out the same.</p>
+  <div class="callout"><b>What this does not show, said straight.</b> The flaw was planted so the result can be checked; a real zero-day is found by an attacker, and this measures what the herd does once one lands. Five nodes on one machine, not five devices. A stolen ingest key is part of the scenario; a node’s host taken over at the root, or physical access, is out. The attack packets are the attack kit’s own shapes, because we do not build new attack generators. So a mutating swarm of AI attackers has not been run against the herd; that, like an outside red team, is an open invitation (see <a href="#redteam">Break it</a>). The patch also closes only what the independent grammar can see: a flaw in both validators at once would not be caught this way.</div>
 </section>
 
 <section id="cfo" aria-labelledby="cfo-h">

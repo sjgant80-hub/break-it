@@ -11,7 +11,7 @@ import { createHash } from 'node:crypto';
 import { judge } from './judge.mjs';
 
 const ROOT = new URL('../', import.meta.url);
-const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8' });
+const git = (...a) => execFileSync('git', a, { cwd: ROOT, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
 const sha = (s) => createHash('sha256').update(s).digest('hex');
 const SMOKE = process.env.HERD_SMOKE === '1';
 
@@ -34,12 +34,17 @@ if (SMOKE) {
   process.exit(0);
 }
 const claims = JSON.parse(text), j = judge(claims, facts);
-const { timing, ...steady } = facts;
+// what must reproduce byte for byte: every fact but the timings (h-3's milliseconds are kept as whether each was in bound)
+const steadyOf = (f) => { const { timing, ...rest } = f; return { ...rest, h3: { ...rest.h3, peers: (rest.h3.peers || []).map((q) => ({ ...q, patchedAfterMs: Number.isFinite(q.patchedAfterMs) && q.patchedAfterMs <= 2000 })) } }; };
+const steady = steadyOf(facts);
 const receipt = { kind: 'break-it.herd.receipt', v: 1, sealed: { path, commit, claimsSha256: sha(text), measuringCodeCommittedAtSeal: codeAtSeal }, facts, steadySha256: sha(JSON.stringify(steady)), held: j.held, failed: j.failed, verdicts: j.verdicts };
 
 if (process.argv.includes('--check')) {
   const was = JSON.parse(readFileSync(new URL('receipts/herd.json', ROOT), 'utf8'));
-  const same = was.steadySha256 === receipt.steadySha256 && JSON.stringify(was.verdicts) === JSON.stringify(receipt.verdicts);
+  // the verdicts' words carry the milliseconds, so verdicts are compared by claim and outcome; the facts by the steady hash
+  const outcomes = (vs) => JSON.stringify(vs.map((v) => [v.id, v.held]));
+  const same = was.steadySha256 === receipt.steadySha256 && outcomes(was.verdicts) === outcomes(receipt.verdicts);
+  if (!same) for (const k of Object.keys(steady)) if (JSON.stringify(steadyOf(was.facts)[k]) !== JSON.stringify(steady[k])) console.log('  differs: ' + k);
   console.log(same ? 'HERD REPRODUCED · ' + j.held + ' held, ' + j.failed + ' failed, as the receipt says (timings aside)' : 'HERD DRIFT · the re-run differs from the receipt');
   process.exit(same ? 0 : 1);
 }
