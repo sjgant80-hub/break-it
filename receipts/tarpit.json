@@ -1,0 +1,211 @@
+{
+ "kind": "break-it.tarpit.receipt",
+ "v": 1,
+ "sealed": {
+  "path": "tarpit/claims.json",
+  "commit": "88169745a792ce1d6d509243cf597af4d1394f67",
+  "claimsSha256": "a4ca4b625ebbda06bfc53771283c35f7213aacdfb0b7600b7fe726caa2ef79af",
+  "measuringCodeCommittedAtSeal": false
+ },
+ "facts": {
+  "settings": {
+   "CONFIRM": 500,
+   "HOLD_MS": 20000,
+   "DRIP_MS": 1000,
+   "CAP": 64
+  },
+  "p3": {
+   "first": 500,
+   "firstRefused": 500,
+   "firstAnsweredAtOnce": 500,
+   "then": 3,
+   "thenHeld": [
+    {
+     "status": 403,
+     "spaces": 20,
+     "spacesOnly": true
+    },
+    {
+     "status": 403,
+     "spaces": 20,
+     "spacesOnly": true
+    },
+    {
+     "status": 403,
+     "spaces": 20,
+     "spacesOnly": true
+    }
+   ]
+  },
+  "p6": [
+   {
+    "status": true,
+    "headers": true,
+    "lengthCountsSpaces": true,
+    "spacesOnly": true,
+    "spaces": 20,
+    "jsonEqual": true
+   },
+   {
+    "status": true,
+    "headers": true,
+    "lengthCountsSpaces": true,
+    "spacesOnly": true,
+    "spaces": 20,
+    "jsonEqual": true
+   },
+   {
+    "status": true,
+    "headers": true,
+    "lengthCountsSpaces": true,
+    "spacesOnly": true,
+    "spaces": 20,
+    "jsonEqual": true
+   }
+  ],
+  "p6all": true,
+  "p7": {
+   "libraryEqual": true,
+   "exact": 503,
+   "shapes": 1,
+   "journalEqual": false,
+   "journalRecords": 503
+  },
+  "p4": {
+   "off": {
+    "answers": 81,
+    "held": 0,
+    "seconds": 121
+   },
+   "on": {
+    "answers": 6,
+    "held": 6,
+    "seconds": 135.4
+   }
+  },
+  "p1": {
+   "sent": 3000,
+   "admitted": 3000,
+   "held": 0,
+   "attackerHeldMeanwhile": 1,
+   "holdingAtTheEnd": 1,
+   "nodeHeldBefore": 9
+  },
+  "p5": {
+   "sent": 100,
+   "maxHolding": 21,
+   "cap": 64,
+   "heldWhenGenuineBegan": 1,
+   "heldWhenGenuineEnded": 0,
+   "held": 100,
+   "quick": 0,
+   "full": 0,
+   "genuine": {
+    "sent": 200,
+    "admittedBase": 200,
+    "admittedBusy": 200,
+    "medianBaseMs": 5,
+    "medianBusyMs": 6.5,
+    "heldBusy": 0
+   }
+  },
+  "p2": {
+   "sent": 100,
+   "admitted": 100,
+   "held": 0,
+   "paidWork": 100,
+   "bits": [
+    18
+   ]
+  },
+  "p8": {
+   "aborted": true,
+   "bytes": 4,
+   "spacesOnly": true,
+   "holdingAfter": 0,
+   "abandonedRose": 1
+  },
+  "books": {
+   "records": 3500,
+   "match": true
+  },
+  "final": {
+   "stats": {
+    "tarpitHeld": 111,
+    "tarpitFinished": 110,
+    "tarpitAbandoned": 1,
+    "tarpitFull": 0,
+    "tarpitDripped": 2204,
+    "admitted": 3500,
+    "refused": 611,
+    "flooded": 0,
+    "rebounded": 1333
+   }
+  },
+  "retried": {
+   "rate": 0,
+   "repaid": 735
+  }
+ },
+ "steadySha256": "4f616a3cd367e611fae79322d9b0859452f7d6a89ee6f9ea5ff758a2836bcc31",
+ "held": 6,
+ "failed": 2,
+ "verdicts": [
+  {
+   "id": "p-1",
+   "role": "COO",
+   "claim": "Separation, another address: while the confirmed attacker is being held, the pilot's 3,000 genuine records sent from another address are all admitted, none is held, and the books equal the feed's.",
+   "measured": "admitted 3000 of 3000, held 0; the attacker was held 1 times meanwhile; the books equal the feed’s: true (3500 records)",
+   "held": true
+  },
+  {
+   "id": "p-2",
+   "role": "CISO",
+   "claim": "Separation, the attacker's own address: genuine records sent from the confirmed attacker's address are all admitted and none is held.",
+   "measured": "from the attacker’s own address: admitted 100 of 100, held 0; each paid the work asked of that address (100 paid, at 18 bits)",
+   "held": true
+  },
+  {
+   "id": "p-3",
+   "role": "CISO",
+   "claim": "Graduated: the attacker's first 500 refusals are answered at once; from the 501st, every refused forgery is held.",
+   "measured": "the first 500 refusals: 500 answered at once; the next 3: 20 spaces, then 403; 20 spaces, then 403; 20 spaces, then 403",
+   "held": true
+  },
+  {
+   "id": "p-4",
+   "role": "CFO",
+   "claim": "Waste: an attacker that sends one forgery at a time and waits for each answer completes at least ten times fewer attempts against the tarpit than against the same node with the tarpit off.",
+   "measured": "answers in 121 s with the tarpit off: 81; in 135.4 s with it on: 6 (13.5 times fewer)",
+   "held": true
+  },
+  {
+   "id": "p-5",
+   "role": "CTO",
+   "claim": "Bounded: when the confirmed attacker sends 100 forgeries at once, at most 64 are held and the rest are answered at once; while 64 are held, genuine records from another address are admitted about as fast as with nothing held.",
+   "measured": "100 forgeries at once: at most 21 held at a time, 100 held, 0 answered in under 5 s; 200 of 200 genuine admitted while 1 were held (median 6.5 ms, against 5 ms with nothing held)",
+   "held": false
+  },
+  {
+   "id": "p-6",
+   "role": "CISO",
+   "claim": "Inert: a held answer carries the same status and the same headers as the unheld one, only spaces come before its JSON, and its JSON is byte for byte the JSON the tarpit-off twin gives for the same packet at the same point.",
+   "measured": "3 held answers against the tarpit-off twin: status equal 3, headers equal 3, length counts the spaces 3, spaces only before the JSON 3, JSON byte for byte 3; and every answer of the sequence equal after its spaces",
+   "held": true
+  },
+  {
+   "id": "p-7",
+   "role": "CISO",
+   "claim": "Harvest unchanged: after the same attack the tarpit node has learned exactly what the tarpit-off twin learned.",
+   "measured": "antibody libraries equal: true (503 exact, 1 shapes); journals equal record for record, time aside: false (503 records)",
+   "held": false
+  },
+  {
+   "id": "p-8",
+   "role": "CISO",
+   "claim": "Silence, and nothing kept: an attacker that gives up after 5 seconds receives only spaces, never a byte of the refusal, and once it has gone the node holds nothing for it.",
+   "measured": "it gave up: true; it received 4 bytes, spaces only: true; a second later the node held 0, abandoned rose by 1",
+   "held": true
+  }
+ ]
+}
