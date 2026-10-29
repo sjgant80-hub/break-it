@@ -380,8 +380,8 @@ async function loadTarpit() {
     ['genuine records from another address, meanwhile', n0((f.p1 || {}).sent) + ' sent · ' + n0((f.p1 || {}).admitted) + ' admitted · ' + n0((f.p1 || {}).held) + ' held'],
     ['genuine records from the attacker’s own address', n0((f.p2 || {}).sent) + ' sent · ' + n0((f.p2 || {}).admitted) + ' admitted · ' + n0((f.p2 || {}).held) + ' held'],
     [n0(p5.sent) + ' forgeries at once', 'at most ' + n0(p5.maxHolding) + ' held · ' + n0(p5.quick) + ' answered at once'],
-    ['genuine latency, median', n0(g5.medianBaseMs) + ' ms with nothing held · ' + n0(g5.medianBusyMs) + ' ms with the tarpit full'],
-    ['against a tarpit-off twin', ((f.p6 || []).every((x) => x.jsonEqual) ? 'every held answer the same refusal, byte for byte' : 'a held answer differed') + ' · antibodies ' + ((f.p7 || {}).libraryEqual ? 'the same' : 'different') + ' · journal ' + ((f.p7 || {}).journalEqual ? 'the same' : 'different')],
+    ['genuine latency, median', n0(g5.medianBaseMs) + ' ms with nothing held · ' + n0(g5.medianBusyMs) + ' ms with ' + n0(p5.heldWhenGenuineBegan) + (p5.heldWhenGenuineBegan === p5.cap ? ' held (the tarpit full)' : ' held (the cap of ' + n0(p5.cap) + ' was never reached)')],
+    ['against a tarpit-off twin', ((f.p6 || []).every((x) => x.jsonEqual) ? 'every held answer the same refusal, byte for byte' : 'a held answer differed') + ' · antibodies ' + ((f.p7 || {}).libraryEqual ? 'the same' : 'different') + ' · journal ' + (bj.equalRecordForRecord ? 'the same on every field but the time and the chain fields that commit to it (p-7b)' : ((f.p7 || {}).journalEqual ? 'the same' : 'different'))],
     ['an attacker that gave up after 5 s', n0((f.p8 || {}).bytes) + ' bytes, all spaces: ' + ((f.p8 || {}).spacesOnly ? 'yes' : 'no') + ' · held for it afterwards: ' + n0((f.p8 || {}).holdingAfter)],
     ['the books', ((f.books || {}).match ? 'equal to the feed’s, over ' : 'NOT equal to the feed’s, over ') + n0((f.books || {}).records) + ' genuine records'],
   ];

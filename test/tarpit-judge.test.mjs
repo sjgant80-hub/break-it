@@ -54,6 +54,8 @@ test('edges that hold: exactly ten times fewer, exactly 10 ms slower, fewer spac
   assert.equal(holds('p-5', set('p5.genuine.medianBusyMs', 14.1)), true);
   assert.equal(holds('p-8', set('p8.bytes', 0)), true);
   assert.equal(holds('p-5', set('p5.maxHolding', 63)), true);
+  assert.equal(holds('p-1', set('p1.attackerHeldMeanwhile', 1)), true, 'held once meanwhile is held');
+  assert.equal(holds('p-4', { ...structuredClone(GOOD), p4: { off: { answers: 10, seconds: 120 }, on: { answers: 1, seconds: 120 } } }), true, 'one answer against ten is ten times fewer');
 });
 
 test('the measured words carry the numbers', () => {
