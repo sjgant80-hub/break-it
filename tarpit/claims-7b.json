@@ -1,0 +1,9 @@
+{
+ "kind": "break-it.tarpit.claims-7b",
+ "v": 1,
+ "sealed": "Written and committed after the first measurement (receipts/tarpit.json, commit 4778bb9) and before tarpit/twins-7b.mjs existed. Disclosed: designed after seeing p-7 fail. p-7 compared the twins' journals with each record's time left out, but each record's chain hash, and the next record's link to it, commit to that time, so they could never be equal; the antibody libraries were equal. p-7's failed verdict is kept.",
+ "setup": "As tarpit/claims.json: a break-it node with the tarpit at its shipped settings and a twin with it off, each in its own process; the same sequence of the attack kit's forgeries from 127.0.0.2 to both (500 refusals, then 3 more, each held on the tarpit node).",
+ "claims": [
+  { "id": "p-7b", "role": "CISO", "claim": "Harvest unchanged, stated exactly: after the same attack the tarpit node has written down and learned exactly what the tarpit-off twin has.", "measure": "after the sequence: the two antibody libraries are equal, and the two journals hold the same number of records, equal record for record on every field except the time and the two chain fields that commit to it (hash, prev); and each journal's chain verifies on its own" }
+ ]
+}
