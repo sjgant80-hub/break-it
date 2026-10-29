@@ -2,8 +2,8 @@
  "kind": "break-it.witness",
  "v": 1,
  "clean": true,
- "killed": 556,
- "total": 591,
+ "killed": 581,
+ "total": 616,
  "kernels": [
   {
    "src": "src/wire.mjs",
@@ -97,6 +97,14 @@
    "src": "src/feed.mjs",
    "killed": 23,
    "total": 23,
+   "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/tarpit.mjs",
+   "killed": 25,
+   "total": 25,
    "ignored": 0,
    "survived": 0,
    "clean": true
