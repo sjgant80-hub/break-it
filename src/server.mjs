@@ -34,6 +34,7 @@ import { verify as edVerify } from 'node:crypto';
 import { prepare as lightPrepare, finish as lightFinish, open as lightOpen, KINDS as LIGHT_KINDS } from '../vendor/light/packet.mjs';
 import { meshOrder, antigensToBytes, bytesToAntigens, nextCounter } from './share.mjs';
 import { evidence, door } from './patch.mjs';
+import { settings as tarpitSettings, decide as tarpitDecide, ticks as tarpitTicks } from './tarpit.mjs';
 
 export const LIMITS = Object.freeze({ rate: 300, burst: 600, queue: 1024, shareBytes: 65536, shareAntigens: 64, shareEveryMs: 250, ipTable: 10000 });
 const hexOf = (u8) => Buffer.from(u8).toString('hex');
@@ -47,6 +48,22 @@ function sendJson(res, code, body) {
   const text = JSON.stringify(body);
   res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-length': Buffer.byteLength(text) });
   res.end(text);
+}
+
+/** A held refusal (tarpit.mjs): sendJson's headers, its length counting the spaces; one inert space a tick, then the
+ *  refusal exactly as sendJson would have sent it. If the source goes away first, the hold ends there: nothing more is
+ *  written and nothing is kept for it. done(dripped, finished) runs once. */
+function holdJson(res, code, body, t, done) {
+  const text = JSON.stringify(body), n = tarpitTicks(t);
+  res.writeHead(code, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store', 'x-content-type-options': 'nosniff', 'content-length': n + Buffer.byteLength(text) });
+  let dripped = 0, over = false;
+  const end = (finished) => { if (over) return; over = true; clearInterval(timer); done(dripped, finished); };
+  const timer = setInterval(() => {
+    if (dripped < n) { res.write(' '); dripped++; }
+    if (dripped >= n) { res.end(text); end(true); }
+  }, t.DRIP_MS);
+  res.on('close', () => end(false));
+  return { stop: () => { end(false); res.destroy(); } };
 }
 
 /** Read exactly Content-Length bytes, refusing chunked bodies, a missing or oversized length, or a mismatch. */
@@ -97,6 +114,9 @@ export async function startNode(opts) {
   // the herd patch (patch.mjs): off until a zero-day is PROVEN on this node — by its own referee, by its own ledger, or by
   // re-checking a peer's evidence itself. Then the referee's independent grammar is a stage of this node's door.
   const herdPatch = o.herdPatch !== false;
+  // the tarpit (tarpit.mjs) is off unless the operator switches it on: o.tarpit true for the defaults, or an object of settings
+  const tarpit = o.tarpit ? tarpitSettings(o.tarpit === true ? null : o.tarpit) : null;
+  const holds = new Set();
   let patch = { on: false, by: null, at: null, why: null };
   const proven = (bytes, by, why) => { if (!herdPatch || patch.on) return false; patch = { on: true, by, at: new Date(now()).toISOString(), why }; log('PATCHED — the referee’s grammar is now a door stage: ' + why); return true; };
   // the node’s whole door: the gate, then (once patched) the independent grammar — what “would this node admit it” means
@@ -145,7 +165,7 @@ export async function startNode(opts) {
     if (r.detail === 'full' && r.bytes && r.size <= MAX_PACKET && r.bytes.length === r.size * 2) relearn(new Uint8Array(Buffer.from(r.bytes, 'hex')), r.family);
   }
 
-  const stats = { admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0, patchRefused: 0, zeroDayEvidence: 0,
+  const stats = { tarpitHeld: 0, tarpitFinished: 0, tarpitAbandoned: 0, tarpitFull: 0, tarpitDripped: 0, admitted: 0, refused: 0, recognised: 0, breaches: 0, shared: 0, shareDropped: 0, adoptedFromPeers: 0, autoimmune: 0, flooded: 0, rebounded: 0, patchRefused: 0, zeroDayEvidence: 0,
     light: { sent: 0, received: 0, admitted: 0, decoded: 0, refused: {} } };   // LIGHT shares: decoded counts every time the door let the decoder run
   // the loot: Legendary runes (signed, persisted), Epic autoimmune events
   const lootPath = o.lootPath || null;
@@ -399,8 +419,18 @@ export async function startNode(opts) {
           return sendJson(res, 400, { dropped: true, stage: 'http', reason: body.why, ...a });
         }
         const work = typeof req.headers['x-rebound'] === 'string' ? req.headers['x-rebound'] : null;
-        const r = await serial(() => processPacket(body.bytes, source, work));
-        return sendJson(res, r.code, r.body);
+        // the source's refusals BEFORE this packet, read in the queue: a source is confirmed once it had been refused CONFIRM times
+        let prior = 0;
+        const r = await serial(async () => { prior = reboundCount.get(source) || 0; return processPacket(body.bytes, source, work); });
+        // THE TARPIT — after the gate has answered, outside the serial queue: only a confirmed attacker's permanent refusal is
+        // held, and only while there is room; everything else, every admission first, goes out at once (tarpit.mjs)
+        const d = tarpit ? tarpitDecide(r.code, r.body && r.body.stage, prior, holds.size, tarpit) : null;
+        if (d && !d.hold && r.code === 403 && /full/.test(d.why)) stats.tarpitFull++;
+        if (!d || !d.hold) return sendJson(res, r.code, r.body);
+        stats.tarpitHeld++;
+        const h = holdJson(res, r.code, r.body, tarpit, (dripped, finished) => { holds.delete(h); stats.tarpitDripped += dripped; if (finished) stats.tarpitFinished++; else stats.tarpitAbandoned++; });
+        holds.add(h);
+        return;
       }
       if (req.method === 'POST' && url.pathname === '/immune/share') {
         const body = await readBody(req, LIMITS.shareBytes);
@@ -422,6 +452,7 @@ export async function startNode(opts) {
           stats, patch, events: memory.events, novel: memory.novel, families: memory.families,
           sources: Object.fromEntries(Object.entries(memory.sources).map(([s, n]) => [s, { refusals: n, standing: standing(memory, s) }])),
           antibodies: { exact: Object.keys(library.exact).length, shapes: library.shapes.length },
+          tarpit: tarpit ? { ...tarpit, holding: holds.size, held: stats.tarpitHeld, finished: stats.tarpitFinished, abandoned: stats.tarpitAbandoned, full: stats.tarpitFull, dripped: stats.tarpitDripped } : null,
           rebound: { epochMs: REBOUND_EPOCH_MS, owed: Object.fromEntries([...reboundCount].map(([src, n]) => [src, { refusals: n, bits: difficultyFor(n) }])) },
           fingerprints: Object.keys(memory.prints).length, peers: peers.map((p) => p.url), journal: journal.length,
         });
@@ -447,7 +478,7 @@ export async function startNode(opts) {
   log('break-it node on http://' + host + ':' + port + ' — ledger ' + ledger.length + ', journal ' + journal.length + ', antibodies ' + library.size);
   return {
     port, url: 'http://' + host + ':' + port, node: nodePub,
-    stats, get patch() { return patch; }, get library() { return library; }, get memory() { return memory; }, referee, app,
-    close: () => new Promise((r) => { if (flushTimer) clearTimeout(flushTimer); server.close(() => { ledger.close(); journal.close(); r(); }); server.closeAllConnections?.(); }),
+    stats, get holding() { return holds.size; }, get patch() { return patch; }, get library() { return library; }, get memory() { return memory; }, referee, app,
+    close: () => new Promise((r) => { if (flushTimer) clearTimeout(flushTimer); for (const h of [...holds]) h.stop(); server.close(() => { ledger.close(); journal.close(); r(); }); server.closeAllConnections?.(); }),
   };
 }
