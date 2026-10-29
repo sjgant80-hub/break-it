@@ -1,0 +1,41 @@
+{
+ "kind": "break-it.tarpit.receipt-7b",
+ "v": 1,
+ "sealed": {
+  "path": "tarpit/claims-7b.json",
+  "commit": "dae503d770c3f70c12dfb96bc9075888f3e00016",
+  "claimsSha256": "289fee34408c348069b03e82fa0fc7b2790d3baf3565aed80b48887e56e9a228"
+ },
+ "facts": {
+  "sent": 503,
+  "heldOn": 3,
+  "heldFrom": 501,
+  "libraryEqual": true,
+  "exact": 503,
+  "shapes": 1,
+  "journals": {
+   "on": 503,
+   "off": 503,
+   "onChainVerifies": true,
+   "offChainVerifies": true,
+   "equalRecordForRecord": true,
+   "firstDiff": -1,
+   "leftOut": [
+    "at",
+    "hash",
+    "prev"
+   ]
+  }
+ },
+ "verdicts": [
+  {
+   "id": "p-7b",
+   "role": "CISO",
+   "claim": "Harvest unchanged, stated exactly: after the same attack the tarpit node has written down and learned exactly what the tarpit-off twin has.",
+   "held": true,
+   "measured": "antibody libraries equal: true (503 exact, 1 shapes); journals 503 and 503 records, equal on every field but time, hash and prev: true; each chain verifies: true, true; the tarpit node held 3 (from forgery 501)"
+  }
+ ],
+ "held": 1,
+ "failed": 0
+}
