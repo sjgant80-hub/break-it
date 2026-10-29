@@ -32,21 +32,26 @@ if (SMOKE) {
 }
 const claims = JSON.parse(text), j = judge(claims, facts);
 // what must reproduce: every fact but the timings — how many answers a window got, latencies, how often the attacker was
-// held while genuine traffic ran, how many spaces a source that gave up caught, retries, and the running totals
+// held while genuine traffic ran, how many spaces a source that gave up caught, retries, and the running totals. Added
+// after the first run (receipts/tarpit.json, said on the page): p-4 and p-5 turn on how fast the attacker's machine pays
+// the rebound's work — the first run's attacker could keep only 21 forgeries held at once, so the cap of 64 was never
+// reached — so a faster or slower machine may judge them differently. CI re-runs and prints them; it does not require them.
+export const SPEED = ['p-4', 'p-5'];
 const steadyOf = (f) => {
   const { p4, retried, final, ...rest } = f;
   const { attackerHeldMeanwhile, holdingAtTheEnd, nodeHeldBefore, ...p1 } = rest.p1 || {};
-  const { genuine, ...p5 } = rest.p5 || {}, { medianBaseMs, medianBusyMs, ...g5 } = genuine || {};
+  const { genuine, sent } = rest.p5 || {}, { admittedBase, admittedBusy, heldBusy } = genuine || {};
   const { bytes, ...p8 } = rest.p8 || {};
-  return { ...rest, p1, p5: { ...p5, genuine: g5 }, p8 };
+  return { ...rest, p1, p5: { sent, genuine: { admittedBase, admittedBusy, heldBusy } }, p8 };
 };
 const steady = steadyOf(facts);
-const receipt = { kind: 'break-it.tarpit.receipt', v: 1, sealed: { path, commit, claimsSha256: sha(text), measuringCodeCommittedAtSeal: codeAtSeal }, facts, steadySha256: sha(JSON.stringify(steady)), held: j.held, failed: j.failed, verdicts: j.verdicts };
+const receipt = { kind: 'break-it.tarpit.receipt', v: 1, speedClaims: SPEED, sealed: { path, commit, claimsSha256: sha(text), measuringCodeCommittedAtSeal: codeAtSeal }, facts, steadySha256: sha(JSON.stringify(steady)), held: j.held, failed: j.failed, verdicts: j.verdicts };
 
 if (process.argv.includes('--check')) {
   const was = JSON.parse(readFileSync(new URL('receipts/tarpit.json', ROOT), 'utf8'));
-  const outcomes = (vs) => JSON.stringify(vs.map((v) => [v.id, v.held]));
-  const same = was.steadySha256 === receipt.steadySha256 && outcomes(was.verdicts) === outcomes(receipt.verdicts);
+  const outcomes = (vs) => JSON.stringify(vs.filter((v) => !SPEED.includes(v.id)).map((v) => [v.id, v.held]));
+  for (const v of j.verdicts.filter((x) => SPEED.includes(x.id))) console.log('  ' + v.id + ' on this machine (not required to match): ' + (v.held ? 'held' : 'failed') + ' · ' + v.measured);
+  const same = sha(JSON.stringify(steadyOf(was.facts))) === sha(JSON.stringify(steady)) && outcomes(was.verdicts) === outcomes(receipt.verdicts);
   if (!same) for (const k of Object.keys(steady)) if (JSON.stringify(steadyOf(was.facts)[k]) !== JSON.stringify(steady[k])) console.log('  differs: ' + k);
   console.log(same ? 'TARPIT REPRODUCED · ' + j.held + ' held, ' + j.failed + ' failed, as the receipt says (timings aside)' : 'TARPIT DRIFT · the re-run differs from the receipt');
   process.exit(same ? 0 : 1);
