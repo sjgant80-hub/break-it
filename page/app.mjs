@@ -358,6 +358,41 @@ async function loadHerd() {
   $('dh-gen').textContent = n0((f.h6.outcomes || {}).admitted || 0) + ' genuine admitted';
 }
 
+// ── the tarpit's receipt (receipts/tarpit.json): its sealed claims by role, the facts, the seal ────────────────────
+const TARPIT_ROLES = [['CISO', 'CISO: it holds the line'], ['CTO', 'CTO: it stays bounded'], ['COO', 'COO: genuine work goes on'], ['CFO', 'CFO: the attacker pays']];
+async function loadTarpit() {
+  let r = null, b = null;
+  try { r = await (await fetch('receipts/tarpit.json')).json(); } catch { r = null; }
+  try { b = await (await fetch('receipts/tarpit-7b.json')).json(); } catch { b = null; }
+  if (!r || !Array.isArray(r.verdicts) || !r.facts) { $('tarpit-roles').textContent = 'The tarpit’s receipt (receipts/tarpit.json) did not load.'; return; }
+  const f = r.facts, p4 = f.p4 || {}, p5 = f.p5 || {}, g5 = p5.genuine || {};
+  const all = b && Array.isArray(b.verdicts) ? [...r.verdicts, ...b.verdicts] : r.verdicts, heldAll = all.filter((v) => v.held).length;
+  $('tp-sum').textContent = heldAll + ' of ' + all.length + ' sealed claims held' + (all.length - heldAll ? ', ' + (all.length - heldAll) + ' failed (kept)' : '') + '.';
+  $('tarpit-roles').innerHTML = TARPIT_ROLES.map(([role, title]) => '<div class="role"><h4>' + esc(title) + '</h4>' + all.filter((v) => v.role === role).map((v) =>
+    '<div class="claim"><span class="tagx ' + (v.held ? 'held">HELD' : 'failed">FAILED') + '</span><b>' + esc(v.id) + '</b> ' + esc(v.claim) + '<div class="measured">measured: ' + esc(v.measured) + '</div></div>').join('') + '</div>').join('');
+  const p7 = f.p7 || {}, bf = (b && b.facts) || {}, bj = bf.journals || {};
+  $('tarpit-failed').textContent = 'p-5: the cap was never reached. Each forgery had to pay an ' + n0(((f.p2 || {}).bits || [])[0] || 0) + '-bit proof-of-work before it was even looked at, and the attacker\u2019s machine could keep at most ' + n0(p5.maxHolding) + ' held at once, so the genuine records ran beside ' + n0(p5.heldWhenGenuineBegan) + ' hold, not ' + n0(p5.cap) + '. The tax slowed the attacker before the tarpit\u2019s limit came into play. The limit itself is tested on small settings in the node\u2019s tests; at the shipped settings it would need an attacker with about three times this machine\u2019s hashing power. '
+    + 'p-7: the antibody libraries were equal (' + n0(p7.exact) + ' exact), but the claim compared the journals with each record\u2019s time left out, while each record\u2019s chain hash, and the next record\u2019s link to it, commit to that time. So they could never be equal. That flaw was ours, in the sealed measure. p-7b, sealed afresh and disclosed as written after p-7 failed, compares every field but those three: ' + (b ? (b.verdicts[0].held ? 'held' : 'failed') + ' (' + n0(bj.on) + ' and ' + n0(bj.off) + ' records, both chains verify: ' + (bj.onChainVerifies && bj.offChainVerifies ? 'yes' : 'no') + ').' : 'its receipt did not load.');
+  const rows = [
+    ['the attacker’s first ' + n0((f.p3 || {}).first) + ' refusals', n0((f.p3 || {}).firstAnsweredAtOnce) + ' answered at once'],
+    ['then, each refused forgery', ((f.p3 || {}).thenHeld || []).map((h) => n0(h.spaces) + ' spaces, then ' + n0(h.status)).join(' · ')],
+    ['answers the attacker got in two minutes', n0((p4.off || {}).answers) + ' with the tarpit off · ' + n0((p4.on || {}).answers) + ' with it on'],
+    ['genuine records from another address, meanwhile', n0((f.p1 || {}).sent) + ' sent · ' + n0((f.p1 || {}).admitted) + ' admitted · ' + n0((f.p1 || {}).held) + ' held'],
+    ['genuine records from the attacker’s own address', n0((f.p2 || {}).sent) + ' sent · ' + n0((f.p2 || {}).admitted) + ' admitted · ' + n0((f.p2 || {}).held) + ' held'],
+    [n0(p5.sent) + ' forgeries at once', 'at most ' + n0(p5.maxHolding) + ' held · ' + n0(p5.quick) + ' answered at once'],
+    ['genuine latency, median', n0(g5.medianBaseMs) + ' ms with nothing held · ' + n0(g5.medianBusyMs) + ' ms with the tarpit full'],
+    ['against a tarpit-off twin', ((f.p6 || []).every((x) => x.jsonEqual) ? 'every held answer the same refusal, byte for byte' : 'a held answer differed') + ' · antibodies ' + ((f.p7 || {}).libraryEqual ? 'the same' : 'different') + ' · journal ' + ((f.p7 || {}).journalEqual ? 'the same' : 'different')],
+    ['an attacker that gave up after 5 s', n0((f.p8 || {}).bytes) + ' bytes, all spaces: ' + ((f.p8 || {}).spacesOnly ? 'yes' : 'no') + ' · held for it afterwards: ' + n0((f.p8 || {}).holdingAfter)],
+    ['the books', ((f.books || {}).match ? 'equal to the feed’s, over ' : 'NOT equal to the feed’s, over ') + n0((f.books || {}).records) + ' genuine records'],
+  ];
+  $('tarpit-facts').innerHTML = rows.map(([k, v]) => '<tr><td>' + esc(k) + '</td><td class="mono">' + esc(v) + '</td></tr>').join('');
+  $('tarpit-seal').innerHTML = '<a href="https://github.com/sjgant80-hub/break-it/commit/' + esc(r.sealed.commit) + '">' + esc(r.sealed.path) + ' @ ' + esc(r.sealed.commit.slice(0, 7)) + '</a>';
+  const on = (p4.on || {}).answers, off = (p4.off || {}).answers;
+  $('dt-waste').textContent = on ? Math.round((off / on) * 10) / 10 + '× fewer answers for a waiting attacker' : '—';
+  $('dt-gen').textContent = n0((f.p1 || {}).admitted) + ' genuine admitted, ' + n0((f.p1 || {}).held) + ' held';
+  $('dt-cap').textContent = 'at most ' + n0(p5.maxHolding) + ' held at once';
+}
+
 // ── the blueprint's mutation scores, from the gate's own receipt ──────────────────────────────────────────────
 async function loadWitness() {
   let w = null;
@@ -421,7 +456,7 @@ $('send').addEventListener('click', async () => {
 });
 
 (async function boot() {
-  renderRebound(); renderVectors(); loadSources(); loadReceipt(); loadHerd(); loadWitness();
+  renderRebound(); renderVectors(); loadSources(); loadReceipt(); loadHerd(); loadTarpit(); loadWitness();
   try {
     const kp = await crypto.subtle.generateKey({ name: 'Ed25519' }, false, ['sign', 'verify']);
     feedKey = kp.privateKey;

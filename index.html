@@ -29,7 +29,7 @@
 <header class="top"><div class="wrap">
   <a class="brand" href="#top">BREAK<b>IT</b></a>
   <nav class="links" aria-label="Sections">
-    <a href="#start">Start here</a><a href="#live">Live defence</a><a href="#pilot">Pilot receipts</a><a href="#herd">The herd</a><a href="#cfo">Cost case</a>
+    <a href="#start">Start here</a><a href="#live">Live defence</a><a href="#pilot">Pilot receipts</a><a href="#herd">The herd</a><a href="#tarpit">The tarpit</a><a href="#cfo">Cost case</a>
     <a href="#how">How it works</a><a href="#blueprint">Blueprint</a><a href="#redteam">Break it</a><a href="#business">For your business</a>
     <a href="#paper">White paper</a><a href="#faq">FAQ</a>
   </nav>
@@ -207,6 +207,43 @@
   <div class="callout"><b>What this does not show, said straight.</b> The flaw was planted so the result can be checked; a real zero-day is found by an attacker, and this measures what the herd does once one lands. Five nodes on one machine, not five devices. A stolen ingest key is part of the scenario; a node’s host taken over at the root, or physical access, is out. The attack packets are the attack kit’s own shapes, because we do not build new attack generators. So a mutating swarm of AI attackers has not been run against the herd; that, like an outside red team, is an open invitation (see <a href="#redteam">Break it</a>). The patch also closes only what the independent grammar can see: a flaw in both validators at once would not be caught this way.</div>
 </section>
 
+<section id="tarpit" aria-labelledby="tarpit-h">
+  <h2 id="tarpit-h"><small>The tarpit · living defence</small>A confirmed attacker waits for nothing, and pays for the wait itself</h2>
+  <p class="intro">The gate refuses every packet it cannot verify, at once and for almost nothing. A determined attacker, an automated one especially, simply sends again. The rebound already makes a source that keeps being refused pay proof-of-work before it is looked at. The tarpit is the next step, for a <b>confirmed</b> attacker only. Its refusals are no longer answered at once. The node holds the answer open, sends one space a second for twenty seconds, then sends the same refusal it would have sent. An attacker that waits spends its own time and connection on nothing. One that will not wait never learns why it was refused. Every refusal is still written down and turned into an antibody, as before. <span id="tp-sum"></span></p>
+  <div class="diagram">
+    <svg viewBox="0 0 1040 250" role="img" aria-labelledby="dt-t">
+      <title id="dt-t">A packet reaches the gate. Admitted: answered at once, whoever sent it. Refused: answered at once unless the source is a confirmed attacker and the refusal is one no genuine key causes; then the answer is held twenty seconds, one space a second, then the same refusal. Every refusal is still journalled and becomes an antibody.</title>
+      <g class="d-arrows">
+        <path d="M150 120 H182" marker-end="url(#ar)"/><path d="M360 120 H392" marker-end="url(#ar)"/><path d="M590 120 H622" marker-end="url(#ar)"/><path d="M830 120 H862" marker-end="url(#ar)"/>
+      </g>
+      <g class="d-text">
+        <rect x="10" y="80" width="140" height="80" rx="8" class="d-box d-line"/><text x="80" y="106" text-anchor="middle">a packet</text><text x="80" y="126" text-anchor="middle" class="d-dim">from any address</text><text x="80" y="144" text-anchor="middle" class="d-dim">paying any work owed</text>
+        <rect x="182" y="80" width="178" height="80" rx="8" class="d-box d-blue"/><text x="271" y="106" text-anchor="middle" class="d-blue">the gate answers</text><text x="271" y="126" text-anchor="middle" class="d-dim">admitted: sent at once,</text><text x="271" y="144" text-anchor="middle" class="d-dim">whoever sent it</text>
+        <rect x="392" y="80" width="198" height="80" rx="8" class="d-box d-purp"/><text x="491" y="106" text-anchor="middle" class="d-purp">a confirmed attacker?</text><text x="491" y="126" text-anchor="middle" class="d-dim">refused 500 times before,</text><text x="491" y="144" text-anchor="middle" class="d-dim">a refusal no key causes</text>
+        <rect x="622" y="70" width="208" height="100" rx="10" class="d-box d-pink d-thick"/><text x="726" y="94" text-anchor="middle" class="d-pink" font-weight="700">held twenty seconds</text><text x="726" y="116" text-anchor="middle">one space a second,</text><text x="726" y="134" text-anchor="middle">then the same refusal</text><text x="726" y="156" text-anchor="middle" class="d-dim">at most 64 at once</text>
+        <rect x="862" y="80" width="168" height="80" rx="8" class="d-box d-line"/><text x="946" y="106" text-anchor="middle">still harvested</text><text x="946" y="126" text-anchor="middle" class="d-dim">journalled, minted,</text><text x="946" y="144" text-anchor="middle" class="d-dim">shared with the herd</text>
+        <text x="10" y="40" class="d-dim">measured: <tspan id="dt-waste">—</tspan> · <tspan id="dt-gen">—</tspan> · <tspan id="dt-cap">—</tspan></text>
+        <text x="392" y="214" class="d-dim">anything else (not confirmed, a work challenge, a counter a retry could cause) is answered at once</text>
+      </g>
+    </svg>
+  </div>
+  <ol class="steps">
+    <li><b>Separation first.</b> The tarpit decides after the gate has answered. A packet the gate admits is answered at once, from any address, so a genuine client never waits, even on the same address as an attacker. So are a proof-of-work challenge (anyone can pay it and get through), a replay or out-of-order counter (a genuine retry can cause one) and a behaviour refusal of a signed packet.</li>
+    <li><b>Only a confirmed attacker.</b> A source is confirmed once the gate has refused it 500 times, the top rung of the rebound’s ladder. Below that, every refusal is answered at once.</li>
+    <li><b>Only a refusal no genuine key causes.</b> A packet of the wrong size, form or grammar, from a sender the node does not know, with a signature that does not verify, or a known attack recognised on sight.</li>
+    <li><b>The waste.</b> The answer is held for twenty seconds, one space a second, then the refusal is sent exactly as it would have been. JSON ignores leading spaces, so the answer still reads as the same refusal. Nothing else is sent: no redirect, no script, nothing aimed at the attacker’s systems. Everything happens on this node.</li>
+    <li><b>Bounded, and it fails to the ordinary answer.</b> At most 64 answers are held at once. When the tarpit is full, a refusal goes out at once. A source that closes the connection ends its hold, and nothing is kept for it. It is off unless the operator switches it on.</li>
+  </ol>
+  <h3>Measured, sealed first, on a real node</h3>
+  <p>One node as <span class="mono">node run.mjs</span> starts it, at the tarpit’s shipped settings, and a twin with the tarpit off where a claim compares, each in its own process. The attacker sends the attack kit’s own forgery from one address and pays the proof-of-work the node asks. Genuine records from the pilot’s feed come from another address, and from the attacker’s own. The claims were committed before any measuring code existed.</p>
+  <div class="verdicts" id="tarpit-roles">loading receipts/tarpit.json…</div>
+  <div class="tablewrap"><table><tbody id="tarpit-facts"></tbody></table></div>
+  <h3>The two that failed, and why</h3>
+  <p id="tarpit-failed">loading…</p>
+  <p>Seal: <span id="tarpit-seal"></span>. Receipt: <a href="receipts/tarpit.json">receipts/tarpit.json</a>. Re-run it yourself: <span class="mono">node tarpit/measure.mjs</span> (about ten minutes: most of it is the attacker waiting). CI runs <span class="mono">node tarpit/measure.mjs --check</span> and <span class="mono">node tarpit/twins-7b.mjs --check</span> on every push. Every claim must come out the same, except p-4 and p-5: they turn on how fast the attacker’s machine pays the proof-of-work, so CI re-runs them and prints its own verdict without requiring a match. That rule was added after the first run, and is said here.</p>
+  <div class="callout"><b>What this does not show, said straight.</b> One node on one machine; the attacker and the genuine clients are local processes, not the internet. An attacker that will not wait escapes the waste quickly, though it learns nothing. A flood from many addresses is met by the rate limit and the queue, not the tarpit. A stolen key, root on the host and physical access are out. The attack is the attack kit’s own forgery, because we do not build new attack generators. The tarpit wastes a confirmed attacker’s time, leaves the proof-of-work tax and the harvest as they were, and never reaches into anyone else’s systems. It does not make the node invulnerable.</div>
+</section>
+
 <section id="cfo" aria-labelledby="cfo-h">
   <h2 id="cfo-h"><small>Cost case · your figures</small>The managed path against a node you own</h2>
   <p class="intro">The managed path in front of an ingest API is a web application firewall plus an API gateway, metered per million requests. Every price is a published list price, read from its primary page with the date below; every volume is yours. The case is computed by <span class="mono">src/cost.mjs</span>, which the mutation gate covers like the gate itself. break-it has no licence fee.</p>
@@ -295,6 +332,8 @@
       <tr><td>loot</td><td class="mono">src/loot.mjs</td><td>the Breaker’s Rune: what the signed breach certificate commits to</td><td class="mono" data-k="src/loot.mjs">—</td></tr>
       <tr><td>feed</td><td class="mono">src/feed.mjs</td><td>the partner feed read as records, and the books it must produce</td><td class="mono" data-k="src/feed.mjs">—</td></tr>
       <tr><td>cost</td><td class="mono">src/cost.mjs</td><td>the CFO’s case from your figures and sourced prices</td><td class="mono" data-k="src/cost.mjs">—</td></tr>
+      <tr><td>tarpit</td><td class="mono">src/tarpit.mjs</td><td>which refusals a confirmed attacker waits for, the cap, the inert drip</td><td class="mono" data-k="src/tarpit.mjs">—</td></tr>
+      <tr><td>tarpit judge</td><td class="mono">tarpit/judge.mjs</td><td>each sealed tarpit claim held against what was measured</td><td class="mono" data-k="tarpit/judge.mjs">—</td></tr>
       <tr><td>pilot judge</td><td class="mono">pilot/judge.mjs</td><td>each sealed claim held against what was measured</td><td class="mono" data-k="pilot/judge.mjs">—</td></tr>
       <tr><td>server</td><td class="mono">src/server.mjs</td><td>one node: HTTP limits, the serial queue, ledger then app; I/O, so proved end to end by the red-team battery and the pilot</td><td class="mono">battery + pilot</td></tr>
       <tr><td>ledger, journal</td><td class="mono">src/ledger.mjs · src/journal.mjs</td><td>append-only files, fsync, one writer, torn-tail trimming, over the gated chain</td><td class="mono">battery</td></tr>

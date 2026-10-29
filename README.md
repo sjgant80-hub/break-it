@@ -122,6 +122,17 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   anyone. A flood doesn't exhaust the defender; it only winds the spring tighter against
   the flooder.
 
+- **The tarpit** (off unless the operator switches it on) — the rung above the rebound, for a
+  **confirmed** attacker only: a source the gate has already refused 500 times. Its refusals
+  that no genuine key can cause (wrong size, form or grammar, an unknown sender, a bad
+  signature, a known attack) are held open twenty seconds, one ASCII space a second, then sent
+  exactly as before (JSON ignores leading spaces). An admission, a work challenge, a counter a
+  retry could cause: answered at once, from any address, so a genuine client never waits.
+  At most 64 held at once; when full, answered at once; a source that leaves ends its hold.
+  Nothing else is sent and nothing reaches into anyone's systems; every refusal is still
+  journalled and harvested. Measured against sealed claims: `node tarpit/measure.mjs`
+  (receipt `receipts/tarpit.json`).
+
 - **Sentinel** — a behaviour guard on *verified* traffic, per sender: a stolen or scripted
   key is still a key, so Sentinel bounds its blast radius (drain, destruction, and a
   one-class deviation from the sender's own baseline) on the GEP ladder. It only ever

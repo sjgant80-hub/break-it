@@ -49,6 +49,7 @@ export const PAIRS = [
   ['src/tarpit.mjs', ['test/tarpit.test.mjs']],
   ['src/patch.mjs', ['test/patch.test.mjs']],
   ['herd/judge.mjs', ['test/herd-judge.test.mjs']],
+  ['tarpit/judge.mjs', ['test/tarpit-judge.test.mjs']],
   ['pilot/judge.mjs', ['test/pilot.test.mjs']],
 ];
 
