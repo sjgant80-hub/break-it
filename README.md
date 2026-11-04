@@ -108,9 +108,23 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   minted (and adopted from a peer) only after the node **re-runs the attack through its own
   gate** and the gate refuses it — so there is no false immunity. On a mesh, a new attack
   is signed and pushed to every peer, each of which re-runs it on its own gate before
-  adopting it: a zero-day lands **once**, then the herd is immune. Every attack is written
-  to a hash-chained journal — the feed the immune system eats from, and the source of CI
-  **vaccines**.
+  adopting it: an attack refused on one node is recognised on sight by the rest. Every
+  attack is written to a hash-chained journal — the feed the immune system eats from, and
+  the source of CI **vaccines**. Negative selection has a price: bytes the gate itself
+  admits (a zero-day in the gate) can never become an antibody, so on its own a zero-day
+  would land once on *every* node. That is what the herd is for.
+
+- **The herd** (on unless a node is started with `herdPatch: false`) — a packet the gate
+  admits and the referee's independent grammar rejects is a zero-day, and the packet itself
+  is the proof. The node switches that grammar on as a stage of its door, journals the
+  packet and shares it with its pinned peers; each peer runs it through its **own** gate
+  and its **own** grammar and patches itself only if its gate admits it and its grammar
+  rejects it (`src/patch.mjs`). A genuine record passes both, so a forged report proves
+  nothing and patches nothing; the proof is re-checked from the journal at every restart.
+  Measured with a planted flaw under five real nodes, claims sealed first (`herd/claims.json`):
+  **7 of 7 held** — the flaw landed once, then every peer closed it and refused it on sight,
+  100 variants refused at the door, 15,000 genuine records admitted
+  (`node herd/measure.mjs`, receipt `receipts/herd.json`; CI re-runs `--check`).
 
 - **The rebound law** — the gate is an elastic membrane. An attack *stretches* it (each
   refusal stored as tension); past its elastic limit the membrane *releases that stored
@@ -130,8 +144,15 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   retry could cause: answered at once, from any address, so a genuine client never waits.
   At most 64 held at once; when full, answered at once; a source that leaves ends its hold.
   Nothing else is sent and nothing reaches into anyone's systems; every refusal is still
-  journalled and harvested. Measured against sealed claims: `node tarpit/measure.mjs`
-  (receipt `receipts/tarpit.json`).
+  journalled and harvested. Measured against sealed claims at the shipped settings:
+  `node tarpit/measure.mjs` (receipt `receipts/tarpit.json`): **6 of 8 held; p-5 and p-7
+  FAILED and are kept** (p-5: the 18-bit tax kept the laptop's attacker below the 64 cap, so
+  the cap went untested at shipped settings; p-7: our own measure compared fields the chain
+  hash commits to). p-7b, sealed afterwards and disclosed as such, held
+  (`receipts/tarpit-7b.json`). p-4 and p-5 turn on the attacker machine's speed, so CI
+  re-runs and prints them without requiring a match; what GitHub's machine printed on each
+  run is kept word for word in `receipts/tarpit-ci.json` (`node tools/ci-tarpit.mjs <run>`),
+  the run where p-5 failed there as well as the one where it held.
 
 - **Sentinel** — a behaviour guard on *verified* traffic, per sender: a stolen or scripted
   key is still a key, so Sentinel bounds its blast radius (drain, destruction, and a
@@ -160,10 +181,19 @@ HTTP limits → known-attack recognition (on sight) → THE REBOUND LAW (cost) �
   double-open / mesh-poisoning / Sentinel abuse / the rebound law). It writes
   `receipts/redteam.json`, and **`--check` regenerates it and demands it be byte-identical**.
   CI runs `--check`.
-- **`node witness-all.mjs`** — the mutation + fuzz gate over every decision kernel. It
-  flips one operator at a time and fails unless a test catches it; a surviving mutant is a
-  line no test actually tests. CI runs it. Any reviewed-equivalent survivor is listed, with
-  a written reason, in `witness.baseline.json`.
+- **`node witness-all.mjs`** — the mutation + fuzz gate over every decision kernel (18 of
+  them, the receipt in `receipts/witness.json`). It flips one operator at a time and fails
+  unless a test catches it; a surviving mutant is a line no test actually tests. Any
+  reviewed-equivalent survivor is listed, with a written reason, in `witness.baseline.json`.
+  The engine is **witness v0.6**, vendored byte for byte in `.witness/` (`SOURCE.json` pins
+  the tag, the commit and each file's SHA-256); CI clones the tag and compares the files
+  before it runs the gate, then regenerates the receipt and demands it byte for byte. The
+  node adapter (`node/breakit-node.mjs`) has its own v0.6 gate step in CI.
+- **`node pilot/check.mjs`**, **`node herd/measure.mjs --check`**, **`node tarpit/measure.mjs
+  --check`**, **`node tarpit/twins-7b.mjs --check`** — the three measurements re-run on
+  GitHub's machine on every push and re-judged against their sealed claims (timings aside).
+- **`node tools/vaccinate.mjs --check`** — every attack ever journalled, replayed through a
+  fresh gate; a vaccine that no longer gets the same refusal fails the build.
 - **`node --test test/*.test.mjs`** — the unit + hostile-input (never-throw) suites, the pilot judge's tests, and the live page's own gate (self-only CSP, every control wired, the FAQ equal to its schema, the credits).
 
 CI green on GitHub's runner is the un-forgeable proof of the code; the **live arena** is
@@ -173,15 +203,21 @@ the un-forgeable proof it's usable. Found something? Write it up in
 ## Layout
 
 ```
-src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost · share (LIGHT mesh)
+src/        wire · gate · immune · antibody · rebound · sentinel · chain · ledger · journal · referee · loot · app · keys · server · client · feed · cost · share (LIGHT mesh) · patch (the herd) · tarpit
 vendor/light/  the estate's one codec (read-only, SHA-pinned) — nodes share antibodies as signed LIGHT packets
-node/       break-it as a node of the estate's shared foundation (vendor/fall-kit-core, pinned): its gate offered as the screen skill
+vendor/fall-kit-core/  the estate's shared foundation (read-only, SHA-pinned in FALL-KIT-CORE.json)
+node/       break-it as a node of the estate's shared foundation: its gate offered as the screen skill
 pilot/      claims (sealed) · measure · check · judge · the egress meter · the metered node
+herd/       claims (sealed) · the planted flaw (measuring process only) · run · measure · judge
+tarpit/     claims + 7b claims (sealed) · node · run · solver · measure · twins-7b · judge
 page/       the live page: app.mjs (the kernels, in the browser) · style.css
-feeds/      the UCI feed + SOURCES.json        costs/  the dated list prices the cost case reads
+feeds/      the UCI feed + SOURCES.json
+costs/      sources.json (the dated list prices the cost case reads) · basis.json (the estate's sourced basis, vendored byte for byte)
 attack-kit/ forge · replay · fuzz · redteam  (+ lib)   — none of it trusted by the node
-test/       one suite per kernel + a shared hostile-input battery
-receipts/   redteam.json · pilot.json · witness.json — the re-runnable receipts CI checks
+tools/      serve · vaccinate · light-share · ci-tarpit
+test/       one suite per kernel + a shared hostile-input battery + the page's own gates
+receipts/   redteam · pilot · herd · tarpit · tarpit-7b · tarpit-ci · light-share · vaccines · witness — the re-runnable receipts CI checks
+.witness/   the mutation gate's engine, witness v0.6 (pinned)       docs/  the buyer walkthroughs
 run.mjs     one command stands it up
 ```
 

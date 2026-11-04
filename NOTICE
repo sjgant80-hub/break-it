@@ -14,8 +14,9 @@ concept, and no estate-private material is inserted into it.
 
 Powered by the Konomi architecture, created by Thomas Frumkin, used with his permission.
 The compression and codec lineage the estate builds on (κ / the Konomi codec and the
-LIGHT template work) is the work of Thomas Frumkin (Konomi). BREAK IT does not ship a
-codec; the credit is recorded because this build descends from that body of work.
+LIGHT template work) is the work of Thomas Frumkin (Konomi). BREAK IT ships the LIGHT
+codec read-only in vendor/light/ (see its NOTICE): the nodes share antibodies as signed
+LIGHT packets.
 
 The Liveware Pilot's feed (feeds/credit-default.csv) is the UCI Machine Learning Repository's
 "Default of Credit Card Clients" dataset, DOI 10.24432/C55S3H, CC BY 4.0: I.-C. Yeh and C.-H. Lien,
@@ -24,6 +25,12 @@ credit card clients", Expert Systems with Applications 36(2) (2009). Only ID and
 
 Supplied by AI Native Solutions (https://www.ai-nativesolutions.com).
 
-Everything in this repository — the wire format, the gate, the immune system, the
-rebound cost law, the ledger, the referee and the attack kit — is original to this
-build and released under the MIT License (see LICENSE).
+The wire format, the gate, the immune system, the rebound cost law, the herd's patch, the
+tarpit, the ledger, the referee and the attack kit are original to this build and released
+under the MIT License (see LICENSE). Vendored read-only, each pinned by SHA-256 and checked
+by the tests, all MIT and all from the same estate:
+  vendor/light/          LIGHT, from sjgant80-hub/konomi-tongue (vendor/light/SOURCE.json)
+  vendor/fall-kit-core/  the shared foundation, from sjgant80-hub/fall-kit (FALL-KIT-CORE.json)
+  .witness/              the mutation gate, witness v0.6, from sjgant80-hub/witness (.witness/SOURCE.json)
+  costs/basis.json       the estate's sourced cost basis, from sjgant80-hub/sovereign-enterprise
+                         (costs/basis.SOURCE.json); each figure in it names its own primary source.

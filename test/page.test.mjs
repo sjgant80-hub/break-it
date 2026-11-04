@@ -37,7 +37,9 @@ test('a self-only security policy, and nothing inline it would have to allow', (
 
 test('the page explains itself: what, start here, live, pilot, cost, how, blueprint, red team, business, white paper, FAQ', () => {
   for (const id of ['what', 'start', 'live', 'pilot', 'cfo', 'how', 'blueprint', 'redteam', 'business', 'paper', 'faq']) assert.match(HTML, new RegExp('<section id="' + id + '"'), id);
-  for (const role of ['CEO', 'CFO', 'COO', 'CTO and CISO', 'Engineering and data', 'Compliance and the DPO']) assert.ok(HTML.includes('<h4>' + role + '</h4>'), role);
+  for (const role of ['CEO', 'CFO', 'COO', 'CTO and CISO', 'Engineering and data', 'Compliance and the DPO', 'Security operations', 'Procurement']) assert.ok(HTML.includes('<h4>' + role + '</h4>'), role);
+  for (const id of ['herd', 'tarpit']) assert.match(HTML, new RegExp('<section id="' + id + '"'), id);
+  for (const ch of ['The herd', 'The tarpit', 'Results', 'What it is not', 'References']) assert.ok(new RegExp('<summary>\\d+ · ' + ch).test(HTML), 'white paper: ' + ch);
   for (const h of ['Against what you pay for now', 'Security, data protection and audit', 'Roll-out', 'Ownership, support and exit', 'Risks, answered straight', 'The case for the board']) assert.ok(HTML.includes('<h3>' + h + '</h3>'), h);
   assert.ok(HTML.includes('<svg viewBox'), 'a diagram');
 });
@@ -83,4 +85,25 @@ test('both themes define every colour the page uses', () => {
     for (const b of blocks) assert.ok(b.includes(name + ':'), name + ' in both themes');
   }
   assert.ok(CSS.includes('@media (prefers-color-scheme: light)'), 'follows the system');
+});
+
+test('the blueprint shows every kernel the mutation gate covers, each filled from the gate’s own receipt', () => {
+  const w = JSON.parse(read('receipts/witness.json'));
+  const bp = HTML.slice(HTML.indexOf('<section id="blueprint"'), HTML.indexOf('</section>', HTML.indexOf('<section id="blueprint"')));
+  const cells = new Set([...bp.matchAll(/data-k="([^"]+)"/g)].map((m) => m[1]));
+  assert.deepEqual([...cells].sort(), w.kernels.map((k) => k.src).sort(), 'one blueprint cell per gated kernel, no more and no fewer');
+  assert.ok(APP.includes("fetch('receipts/witness.json')"), 'the cells are filled from the receipt, not typed');
+});
+
+test('the tarpit’s machine-speed claims are shown run by run from the CI record, held and failed alike', () => {
+  const c = JSON.parse(read('receipts/tarpit-ci.json'));
+  assert.ok(c.runs.length >= 2);
+  for (const r of c.runs) for (const id of ['p-4', 'p-5']) {
+    assert.match(r[id].line, new RegExp('^' + id + ' on this machine \\(not required to match\\): ' + r[id].verdict + ' · '), 'run ' + r.run + ' ' + id);
+    assert.match(r.url, /^https:\/\/github\.com\/sjgant80-hub\/break-it\/actions\/runs\/\d+$/);
+  }
+  assert.ok(c.runs.some((r) => r['p-5'].verdict === 'failed'), 'the record keeps the run where p-5 failed');
+  assert.ok(APP.includes("fetch('receipts/tarpit-ci.json')") && HTML.includes('id="tpci-runs"'), 'the page lists every recorded run');
+  const tp = HTML.slice(HTML.indexOf('<section id="tarpit"'), HTML.indexOf('</section>', HTML.indexOf('<section id="tarpit"')));
+  for (const r of c.runs) assert.ok(!tp.includes(String(r.run)), 'no CI run is singled out in the page text: ' + r.run);
 });

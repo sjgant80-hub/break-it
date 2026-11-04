@@ -1,0 +1,39 @@
+{
+ "kind": "break-it.tarpit-ci",
+ "v": 1,
+ "about": "What GitHub’s machine printed for p-4 and p-5 on each gate run recorded here, copied word for word from the run’s log (node tools/ci-tarpit.mjs <runId>). CI prints these two without requiring them to match receipts/tarpit.json, because they turn on how fast the attacker’s machine pays the proof-of-work. The committed receipt keeps the laptop’s verdicts.",
+ "runs": [
+  {
+   "run": 40931955536,
+   "url": "https://github.com/sjgant80-hub/break-it/actions/runs/40931955536",
+   "sha": "c30646ce52b30b80192edbe94d0732e264fd67f9",
+   "at": "2026-10-29T18:33:38Z",
+   "conclusion": "success",
+   "p-4": {
+    "verdict": "held",
+    "line": "p-4 on this machine (not required to match): held · answers in 120.3 s with the tarpit off: 670; in 120.8 s with it on: 6 (111.7 times fewer)"
+   },
+   "p-5": {
+    "verdict": "held",
+    "line": "p-5 on this machine (not required to match): held · 100 forgeries at once: at most 64 held at a time, 64 held, 36 answered in under 5 s; 200 of 200 genuine admitted while 64 were held (median 0.8 ms, against 0.6 ms with nothing held)"
+   },
+   "summary": "TARPIT REPRODUCED · 7 held, 1 failed, as the receipt says (timings aside)"
+  },
+  {
+   "run": 40935259068,
+   "url": "https://github.com/sjgant80-hub/break-it/actions/runs/40935259068",
+   "sha": "526208652a026bb1545ff038a0b1928bb8b6b4e1",
+   "at": "2026-10-29T18:54:59Z",
+   "conclusion": "success",
+   "p-4": {
+    "verdict": "held",
+    "line": "p-4 on this machine (not required to match): held · answers in 120 s with the tarpit off: 402; in 121.6 s with it on: 6 (67 times fewer)"
+   },
+   "p-5": {
+    "verdict": "failed",
+    "line": "p-5 on this machine (not required to match): failed · 100 forgeries at once: at most 60 held at a time, 100 held, 0 answered in under 5 s; 200 of 200 genuine admitted while 11 were held (median 1.2 ms, against 0.9 ms with nothing held)"
+   },
+   "summary": "TARPIT REPRODUCED · 6 held, 2 failed, as the receipt says (timings aside)"
+  }
+ ]
+}

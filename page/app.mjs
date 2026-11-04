@@ -391,6 +391,31 @@ async function loadTarpit() {
   $('dt-waste').textContent = on ? Math.round((off / on) * 10) / 10 + '× fewer answers for a waiting attacker' : '—';
   $('dt-gen').textContent = n0((f.p1 || {}).admitted) + ' genuine admitted, ' + n0((f.p1 || {}).held) + ' held';
   $('dt-cap').textContent = 'at most ' + n0(p5.maxHolding) + ' held at once';
+  loadTarpitCi();
+}
+
+// ── what GitHub's machine printed for p-4 and p-5 on each recorded CI run (receipts/tarpit-ci.json), word for word ─────
+async function loadTarpitCi() {
+  let c = null;
+  try { c = await (await fetch('receipts/tarpit-ci.json')).json(); } catch { c = null; }
+  if (!c || !Array.isArray(c.runs) || !c.runs.length) { $('tpci-sum').textContent = 'The CI record (receipts/tarpit-ci.json) did not load.'; return; }
+  const runs = c.runs, held = (id) => runs.filter((r) => r[id] && r[id].verdict === 'held').length;
+  const tally = (id) => id + ' held on ' + n0(held(id)) + ' of ' + n0(runs.length) + (held(id) === runs.length ? '' : ' and failed on ' + n0(runs.length - held(id)));
+  $('tpci-sum').textContent = 'Across the ' + n0(runs.length) + ' CI runs recorded: ' + tally('p-4') + '; ' + tally('p-5') + '.';
+  $('tpci-runs').innerHTML = runs.map((r) => '<li><a href="' + esc(r.url) + '">CI run ' + esc(String(r.run)) + '</a> <span class="dim">(commit ' + esc(String(r.sha).slice(0, 7)) + ', ' + esc(String(r.at).slice(0, 10)) + ')</span>'
+    + ['p-4', 'p-5'].map((id) => '<div class="measured"><span class="tagx ' + (r[id].verdict === 'held' ? 'held">HELD' : 'failed">FAILED') + '</span> <span class="mono">' + esc(r[id].line) + '</span></div>').join('') + '</li>').join('');
+}
+
+// ── the estate's sourced basis (costs/basis.json, vendored byte for byte): the two figures shown beside the case ───────
+async function loadBasis() {
+  let b = null;
+  try { b = await (await fetch('costs/basis.json')).json(); } catch { b = null; }
+  const e = b && b.electricityPencePerKwh, w = b && b.wageMedianHourly;
+  if (!e || !w || !Number.isFinite(e.value) || !Number.isFinite(w.value)) return;
+  $('c-biz').textContent = ': ' + e.value.toFixed(2) + 'p per kWh, ' + e.what.replace(/\s*\((.*)\)$/, ', $1');
+  $('c-median').textContent = '; the UK median is £' + w.value.toFixed(2) + ' (' + w.what.split(':')[0] + ')';
+  const li = (x) => '<li><a href="' + esc(x.source) + '">' + esc(x.what) + '</a> <span class="dim">(from the estate’s sourced basis, ' + esc(String(x.via || '').replace(/^estate basis /, 'read ')) + ')</span></li>';
+  $('c-sources').insertAdjacentHTML('beforeend', li(e) + li(w));
 }
 
 // ── the blueprint's mutation scores, from the gate's own receipt ──────────────────────────────────────────────
@@ -408,6 +433,7 @@ async function loadSources() {
   try { const j = await (await fetch('costs/sources.json')).json(); const p = pricesFrom(j); if (p.ok) { prices = p.prices; sources = j.sources; } } catch { prices = null; }
   $('c-sources').innerHTML = sources.map((s) => '<li><a href="' + esc(s.url) + '">' + esc(s.what) + '</a> <span class="dim">(read ' + esc(s.read) + ')</span></li>').join('');
   cost();
+  loadBasis();
 }
 const int = (id) => { const v = Number($(id).value); return Number.isFinite(v) ? Math.round(v) : NaN; };
 const pence = (id) => { const v = Number($(id).value); return Number.isFinite(v) ? Math.round(v * 100) : NaN; };

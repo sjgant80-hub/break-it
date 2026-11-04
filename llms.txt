@@ -13,6 +13,12 @@ Supplier: AI Native Solutions, https://www.ai-nativesolutions.com
 - The rebound: past 100 refusals a source pays proof-of-work per look (about 4,096 hashes; 262,144 past 500); the gate checks it in one hash and sends nothing back.
 - Sentinel: behaviour on verified traffic (drain, destruction, inflation over 10,000,000 in 64 records, deviation from the sender's baseline) on Gary W. Floyd's GEP ladder.
 - Ledger: hash-chained, fsync'd before the app acts, re-run through the gate on every start.
+- The herd: a packet the gate admits and the referee's independent grammar rejects is a zero-day, and the packet is its own proof. The node closes its door to what that grammar rejects and shares the packet; each pinned peer re-checks it on its own gate and grammar before closing the same hole, so a flaw lands once in the mesh, not once per node. A genuine record passes both checks, so a false report patches nothing.
+- The tarpit (off unless switched on): a source the gate has refused 500 times has its refusals held open twenty seconds, one space a second, then answered exactly as before; at most 64 at once; admissions are never held.
+
+## The herd and the tarpit (receipts/herd.json, receipts/tarpit.json)
+- The herd, measured with a flaw planted in the measuring process under five real nodes, claims sealed first: 7 of 7 held. The flaw landed once; the four peers closed it themselves and refused the same packet on sight; 100 variants were refused at the door; 15,000 genuine records were admitted with the books equal on every node.
+- The tarpit, measured at its shipped settings against a tarpit-off twin, claims sealed first: 6 of 8 held, p-5 and p-7 failed and are kept (the cap went untested at shipped settings; our own measure of p-7 was flawed). p-7b, sealed afterwards and disclosed as such, held.
 
 ## The Liveware Pilot (receipts/pilot.json)
 - One real node ingested all 180,000 payment records of the UCI Default of Credit Card Clients dataset in 925 seconds (194.6 a second on an Intel i7-1255U laptop), every signature checked and every record synced to disk first.

@@ -1,0 +1,14 @@
+{
+ "file": "costs/basis.json",
+ "what": "the estate's sourced basis: every external figure an estate cost case may read, each with its primary source and the date it was read",
+ "from": "https://github.com/sjgant80-hub/sovereign-enterprise/blob/main/data/basis.json",
+ "gitBlob": "8fe2e392afe1be3c8d430225b0786984ba0854ef",
+ "sha256": "83e9c2effa2f81596dcfa7110f030940032c1910cdf928d27d628ae59d73bb42",
+ "copiedVia": "liveware vendor/ai-first-company/vendor/sovereign-enterprise/data/basis.json (the same blob)",
+ "copied": "2026-11-04",
+ "rule": "vendored byte for byte and never edited here; test/page-numbers.test.mjs checks the SHA-256",
+ "reads": {
+  "electricityPencePerKwh": "the UK business electricity price, shown beside the household cap the case uses, so the node line is seen to be the dearer of the two",
+  "wageMedianHourly": "the UK median hourly wage, shown beside the staff-rate input as the alternative to the legal floor the case starts from"
+ }
+}

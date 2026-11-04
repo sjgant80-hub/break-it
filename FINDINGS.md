@@ -19,7 +19,8 @@ on something the gate did not admit, or desyncs the ledger from the app state.
 ## In-house red team (reproduced every run by `attack-kit/redteam.mjs --check`)
 
 Every vector in the brief, run against real nodes, each asserting the outcome it should
-produce. Current result: **66 cases, all held** (see `receipts/redteam.json`).
+produce. Current result: **79 cases, all held** (see `receipts/redteam.json`; the count and
+every outcome are in the receipt, which `--check` regenerates byte for byte).
 
 | Vector | What was tried | Outcome |
 |---|---|---|
@@ -50,6 +51,10 @@ produce. Current result: **66 cases, all held** (see `receipts/redteam.json`).
 | state | second writer on a live ledger | refused |
 | state | restart | the drained key stays blocked and the attacks stay known (rebuilt from the journal) |
 | state | the attack journal edited | journal moved aside, the ledger untouched |
+| ingest | a REC record for account 0, an account past the limit, an account with its top bit set, a month after December 2099, an amount past the limit, 0xffffffff | refused at `schema` |
+| ingest | a REC record one byte short or with a byte left over; SQL or a script where a record goes | refused at `schema` |
+| ingest | a genuine feed of 50 records | 50 of 50 posted, balances equal the feed |
+| sentinel | the feed key stolen, posting credit without end | blocked (`behavior`) at record 5 |
 | referee | did anything reach the app it should not have? | clean — every admitted message checked; state == ledger replay |
 
 ## Residual / honest limits
@@ -67,6 +72,17 @@ produce. Current result: **66 cases, all held** (see `receipts/redteam.json`).
   *re-run* an antigen on its own gate, never to adopt on its say-so. A compromised peer
   cannot inject a false antibody (it would have to produce bytes that this node's own gate
   refuses at a permanent stage — i.e. a genuine attack).
+
+- **A zero-day in the gate.** Negative selection means an antibody can never refuse bytes the
+  node's own gate admits, so a flaw in the gate cannot be learned as an antibody. The herd
+  (`src/patch.mjs`) closes it instead: the breach packet is its own proof, and each peer
+  re-checks it on its own gate and grammar before closing its door to what the grammar rejects.
+  Measured with a planted flaw under five nodes (`receipts/herd.json`, 7 of 7 held). It closes
+  only what the referee's independent grammar can see: a flaw in both validators at once would
+  not be caught this way.
+- **The tarpit** holds only a confirmed attacker's refusals, from one address at a time; a flood
+  spread over many addresses is met by the rate limit and the queue instead. Its cap went
+  untested at the shipped settings on the laptop (p-5 failed, kept in `receipts/tarpit.json`).
 
 No referee breach has been produced. If you produce one, you've earned the rune — log it
 above.
