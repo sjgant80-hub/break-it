@@ -1,0 +1,12 @@
+{
+ "what": "the mutation gate witness-all.mjs runs over every decision kernel, vendored read-only and byte for byte",
+ "repo": "https://github.com/sjgant80-hub/witness",
+ "tag": "v0.6",
+ "commit": "f04fe3047e3d49b98c67713befd5b77182afa0d4",
+ "files": {
+  "witness.mjs": "9918297aa5f8fc4e1d26d9e6b25226f56102fdc04f0c634155bfcba1c086ef48",
+  "runner.mjs": "e85f13b1b30c40c045bcb7997a5d73808c14684dcd161c4a2ea14caaf47c3a0e"
+ },
+ "licence": "MIT",
+ "check": "CI clones the tag (git clone --depth 1 --branch v0.6) and compares both files byte for byte; test/witness-pin.test.mjs checks the SHA-256 of each on every test run"
+}

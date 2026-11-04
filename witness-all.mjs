@@ -15,13 +15,19 @@
 //   feed      — the partner feed read as records, and the books a faithful ingest must end with
 //   judge     — the pilot's judge: each sealed claim held against what was measured (pilot/judge.mjs)
 //   cost      — the CFO's case: the managed-cloud bill against the node's, from the buyer's figures and sourced prices
+//   share     — what a node says to its pinned peers in LIGHT: the mesh key order, antigens <-> bytes, the share counter
+//   tarpit    — which refusals a confirmed attacker waits for, the cap, the inert drip (tarpit/judge.mjs judges its claims)
+//   patch     — the herd's evidence rule: a breach proven on this node's own gate and grammar (herd/judge.mjs judges the herd)
+//   app       — the naive target: it does no checking on purpose, and its six operators are still held to the referee's fold
+//
+// The engine is witness v0.6, vendored byte for byte in .witness/ (SOURCE.json pins the tag, the commit and each
+// file's SHA-256; test/witness-pin.test.mjs checks them, and CI compares them with a fresh clone of the tag).
 //
 // NOT gated here, each with its reason:
 //   · server.mjs, run.mjs — HTTP/orchestration and I/O (sockets, timers, process): no pure decision kernel. The
 //     red-team battery (attack-kit/redteam.mjs --check) drives real nodes end to end and reproduces its receipt.
 //   · ledger.mjs, journal.mjs — file I/O (fsync, locks, torn-tail trimming) over chain.mjs, which IS gated. Value-
 //     tested by the battery (ledger tamper/delete/reorder/torn-tail/double-open all refuse; the journal is chained).
-//   · app.mjs — the naive target on purpose; it does no checking, so there is nothing to mutate-test.
 //   · keys.mjs, client.mjs — node:crypto glue and the legitimate sender; exercised by every test that signs.
 //   · attack-kit/** — the attacker's tools; not trusted by the node, not part of the defence.
 // Reviewed-equivalent survivors, if any, live in witness.baseline.json with an argued reason.
@@ -48,6 +54,7 @@ export const PAIRS = [
   ['src/feed.mjs', ['test/feed.test.mjs']],
   ['src/tarpit.mjs', ['test/tarpit.test.mjs']],
   ['src/patch.mjs', ['test/patch.test.mjs']],
+  ['src/share.mjs', ['test/share.test.mjs']],
   ['herd/judge.mjs', ['test/herd-judge.test.mjs']],
   ['tarpit/judge.mjs', ['test/tarpit-judge.test.mjs']],
   ['pilot/judge.mjs', ['test/pilot.test.mjs']],
@@ -66,6 +73,8 @@ for (const [src, tests] of PAIRS) {
   rows.push({ src, killed: r.killed, total: r.total, survived: r.survived.length, ignored: r.ignored.length, capped: r.capped, secs, clean: r.clean && !r.capped });
   console.log(`${r.clean && !r.capped ? '✓' : '✗'} ${src.padEnd(18)} ${String(r.killed).padStart(4)}/${String(r.total).padEnd(4)} killed` +
     `${r.ignored.length ? ` · ${r.ignored.length} reviewed-equivalent` : ''}${r.capped ? ` · CAPPED at ${r.capped}` : ''} · ${secs}s  (${testFiles.length} files)`);
+  if (r.baselineFailed || r.noMutants) console.log(`    NOT GATED: ${r.reason}`);
+  for (const e of r.rejectedExemptions || []) console.log(`    EXEMPTION REFUSED: ${e.mutation} :: ${e.snippet} (${e.why})`);
   for (const s of r.survived) console.log(`    SURVIVED line ${s.line}: ${s.mutation} :: ${s.snippet}`);
   if (!r.clean || r.capped) allClean = false;
 }

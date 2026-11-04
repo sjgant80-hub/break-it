@@ -153,5 +153,25 @@
     "mutation": "|| → &&",
     "snippet": "if (/^0+$/.test(counter) || n < 3 || n > 256 || body.length !== n * 2) return false;",
     "reason": "masked disjunction: of n<3 / n>256, a sub-3 payload is also rejected by the op-parse (too short to form a valid op) and n>256 is unreachable, so flipping this || leaves grammarOk's verdict unchanged."
+  },
+  {
+    "mutation": "<= → <",
+    "snippet": "const cap = Number.isInteger(max) && max >= 1 && max <= MAX_ANTIGENS ? max : MAX_ANTIGENS;",
+    "reason": "share.mjs bytesToAntigens: at max = MAX_ANTIGENS (64) both arms give 64 (max itself, or the MAX_ANTIGENS fallback), so <= and < choose the same cap for every input."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "for (let k = 0; k < 3; k++) { if (at >= bytes.length) return -1; const b = bytes[at++]; n ",
+    "reason": "share.mjs varint reader: at = bytes.length, the mutant reads bytes[at] = undefined, whose high bit test (undefined < 128) is false, so it loops once more and returns -1 at the next check (or at the loop end): the same -1, the same refusal, the same reason."
+  },
+  {
+    "mutation": ">= → >",
+    "snippet": "const l = typeof last === 'bigint' && last >= 0n ? last : 0n;",
+    "reason": "share.mjs nextCounter: at last = 0n both arms give 0n (last itself, or the 0n fallback), so >= and > give the same counter for every input."
+  },
+  {
+    "mutation": "> → >=",
+    "snippet": "const t = Number.isSafeInteger(nowMs) && nowMs > 0 ? BigInt(nowMs) : 0n;",
+    "reason": "share.mjs nextCounter: at nowMs = 0 both arms give 0n (BigInt(0), or the 0n fallback), so > and >= give the same clock floor for every input."
   }
 ]

@@ -49,6 +49,13 @@ test('bytesToAntigens refuses every malformed body, with a reason', () => {
   assert.deepEqual(bytesToAntigens(Uint8Array.of(1, 0xd0, 0x02, ...pkt(336, 0))).ok, true);
 });
 
+test('a length is at most three varint bytes: a fourth is refused even when the value it spells is small', () => {
+  // 0x81 0x80 0x80 0x00 spells 1 in four bytes; three bytes is the most the format allows (2^21 - 1)
+  assert.deepEqual(bytesToAntigens(Uint8Array.of(0x81, 0x80, 0x80, 0x00, 1, 9)), { ok: false, why: 'a share carries 1–64 antigens' });
+  assert.deepEqual(bytesToAntigens(Uint8Array.of(1, 0x81, 0x80, 0x80, 0x00, 9)), { ok: false, why: 'antigen 0 is not 1–336 bytes' });
+  assert.deepEqual(bytesToAntigens(Uint8Array.of(0x81, 0x80, 0x00, 1, 9)).ok, true, 'three bytes, the longest allowed, still reads');
+});
+
 test('nextCounter: after the last, never behind the clock, junk is zero', () => {
   assert.equal(nextCounter(0n, 1000), 1000n);
   assert.equal(nextCounter(5000n, 1000), 5001n);

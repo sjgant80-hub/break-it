@@ -2,8 +2,8 @@
  "kind": "break-it.witness",
  "v": 1,
  "clean": true,
- "killed": 664,
- "total": 699,
+ "killed": 699,
+ "total": 738,
  "kernels": [
   {
    "src": "src/wire.mjs",
@@ -55,8 +55,8 @@
   },
   {
    "src": "src/rebound.mjs",
-   "killed": 25,
-   "total": 37,
+   "killed": 27,
+   "total": 39,
    "ignored": 12,
    "survived": 0,
    "clean": true
@@ -114,6 +114,14 @@
    "killed": 6,
    "total": 6,
    "ignored": 0,
+   "survived": 0,
+   "clean": true
+  },
+  {
+   "src": "src/share.mjs",
+   "killed": 33,
+   "total": 37,
+   "ignored": 4,
    "survived": 0,
    "clean": true
   },

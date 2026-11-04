@@ -69,6 +69,15 @@ test('THE LAW — obeys: O(1) defender, attacker ≥ defender, ratchet never sli
   assert.equal(DEFENDER_COST, 1);
 });
 
+test('THE LAW, explained: each broken leg is named in words an operator can read', () => {
+  assert.deepEqual(obeys({ attackerWork: 0, defenderWork: 2 }).broke, [
+    'amplification: the defender did 2 > 1 hash per rejection',
+    'the attacker spent less than the defender (0 < 2)',
+  ]);
+  assert.deepEqual(obeys({ attackerWork: 10, defenderWork: 1, bitsBefore: 12, bitsAfter: 8 }).broke, ['the ratchet slipped: 12 → 8 bits (attacking got cheaper)']);
+  assert.deepEqual(obeys({ attackerWork: 4096, defenderWork: 1 }).broke, []);
+});
+
 test('THE ELASTIC LAW — released: free under the limit, rising past it, never unwinding', () => {
   assert.equal(released(0), 1);
   assert.equal(released(REBOUND_LADDER.BLOCK - 1), 1);
