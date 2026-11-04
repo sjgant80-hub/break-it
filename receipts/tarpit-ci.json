@@ -34,6 +34,22 @@
     "line": "p-5 on this machine (not required to match): failed · 100 forgeries at once: at most 60 held at a time, 100 held, 0 answered in under 5 s; 200 of 200 genuine admitted while 11 were held (median 1.2 ms, against 0.9 ms with nothing held)"
    },
    "summary": "TARPIT REPRODUCED · 6 held, 2 failed, as the receipt says (timings aside)"
+  },
+  {
+   "run": 41893076204,
+   "url": "https://github.com/sjgant80-hub/break-it/actions/runs/41893076204",
+   "sha": "d2bf3d74f243d511aca1388878e2d0a191cd00ee",
+   "at": "2026-11-04T19:02:43Z",
+   "conclusion": "success",
+   "p-4": {
+    "verdict": "held",
+    "line": "p-4 on this machine (not required to match): held · answers in 122.8 s with the tarpit off: 329; in 121.3 s with it on: 6 (54.8 times fewer)"
+   },
+   "p-5": {
+    "verdict": "failed",
+    "line": "p-5 on this machine (not required to match): failed · 100 forgeries at once: at most 64 held at a time, 100 held, 0 answered in under 5 s; 200 of 200 genuine admitted while 64 were held (median 1.1 ms, against 0.7 ms with nothing held)"
+   },
+   "summary": "TARPIT REPRODUCED · 6 held, 2 failed, as the receipt says (timings aside)"
   }
  ]
 }
