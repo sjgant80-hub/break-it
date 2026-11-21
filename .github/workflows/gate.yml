@@ -47,3 +47,8 @@ jobs:
         run: |
           node /tmp/witness6/witness.mjs mutate node/breakit-node.mjs --timeout 120000 --cap 400 --test timeout -k 5 90 node test/breakit-node.test.mjs | tee /tmp/wn.txt
           grep -q '"clean": true' /tmp/wn.txt || { echo "::error::mutants survived in node/breakit-node.mjs"; exit 1; }
+
+      - name: break-it as a cell of the estate genome — genome/cell.mjs's mutation gate (witness v0.6), CLEAN with no exemptions
+        run: |
+          node .witness/witness.mjs mutate genome/cell.mjs --timeout 60000 --cap 100000 --test node --test test/genome.test.mjs | tee /tmp/genome.out
+          node -e "const j=JSON.parse(require('fs').readFileSync('/tmp/genome.out','utf8'));if(j.clean!==true||j.ignored.length){console.error('GENOME GATE NOT CLEAN');process.exit(1)}console.log('CLEAN '+j.killed+'/'+j.total)"

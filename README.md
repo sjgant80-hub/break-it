@@ -2,6 +2,8 @@
 
 ### ▶ Live: **https://sjgant80-hub.github.io/break-it/**
 
+This repository is a cell of the [estate genome](https://sjgant80-hub.github.io/estate-genome/): its `seed.json` and `genome/` hooks pass the four-trait birth check on every push.
+
 A secure ingest gateway for the records you take in from partners and devices. It proves
 **who sent each record, in what order, in exactly what shape**, on the raw bytes, **before any
 software parses it**. Every refusal becomes an antibody, a repeat attacker pays proof-of-work

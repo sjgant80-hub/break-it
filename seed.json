@@ -1,0 +1,75 @@
+{
+  "genome": "1",
+  "name": "break-it",
+  "kind": "repo",
+  "purpose": "A secure ingest gateway that proves who sent each record, in what order and in exactly what shape, on the raw bytes before any software parses it, and refuses everything else with the stage that stopped it.",
+  "lane": {
+    "id": "raw-packet-ingest",
+    "accepts": "one raw packet as bytes (hex), the pinned public key table of its senders, and each sender's last admitted counter",
+    "refuses": "an already-parsed record: the gate checks bytes before parsing, so a record that skipped it cannot be vouched for"
+  },
+  "interface": {
+    "in": "{packet, pinned, last}: the packet in hex, sender id to 32-byte Ed25519 public key in hex, sender id to last counter; to judge, a claim: the stage",
+    "out": "admitted with the frozen parsed message, or refused with the stage (size, magic, schema, sender, signature, counter, error) and a reason"
+  },
+  "judge": {
+    "what": "a claimed gate decision for a packet is right when break-it's own decide(), with the pinned keys and counters, stops it at the same stage or admits it",
+    "run": "node genome/judge.mjs",
+    "cases": {
+      "good": {
+        "packet": "42524b3101010000000000000001000c01046e616d6505616c696366cb2d255c6aee1fd32885d7cd23c914c13ceb31b3354fa6b436282fe2e2a50401f84cbbd481ba29c58062a6e55276a887b26d33934f14f36c7073d56a00da280e",
+        "pinned": {
+          "1": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+        },
+        "last": {
+          "1": "0"
+        },
+        "claim": "signature"
+      },
+      "bad": {
+        "packet": "42524b3101010000000000000001000c01046e616d6505616c696366cb2d255c6aee1fd32885d7cd23c914c13ceb31b3354fa6b436282fe2e2a50401f84cbbd481ba29c58062a6e55276a887b26d33934f14f36c7073d56a00da280e",
+        "pinned": {
+          "1": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+        },
+        "last": {
+          "1": "0"
+        },
+        "claim": "admitted"
+      }
+    }
+  },
+  "boundary": {
+    "run": "node genome/lane.mjs",
+    "inLane": {
+      "packet": "42524b3101010000000000000001000c01046e616d6505616c696365cb2d255c6aee1fd32885d7cd23c914c13ceb31b3354fa6b436282fe2e2a50401f84cbbd481ba29c58062a6e55276a887b26d33934f14f36c7073d56a00da280e",
+      "pinned": {
+        "1": "8a88e3dd7409f195fd52db2d3cba5d72ca6709bf1d94121bf3748801b40f6f5c"
+      },
+      "last": {
+        "1": "0"
+      }
+    },
+    "outOfLane": {
+      "record": {
+        "sender": 1,
+        "counter": 1,
+        "op": "SET",
+        "key": "name",
+        "value": "alice"
+      }
+    },
+    "escalate": "kar"
+  },
+  "health": {
+    "run": "node genome/health.mjs"
+  },
+  "tombstone": {
+    "apply": "node genome/tombstone.mjs apply",
+    "restore": "node genome/tombstone.mjs restore"
+  },
+  "provenance": {
+    "repo": "sjgant80-hub/break-it",
+    "by": "Kar, for Simon Gant",
+    "born": "2026-11-21"
+  }
+}
